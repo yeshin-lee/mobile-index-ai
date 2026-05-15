@@ -1,0 +1,44 @@
+.tooltip {
+  min-width: 132px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--gray-800);
+  border: 1px solid var(--gray-650);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  box-sizing: border-box;
+}
+
+.tooltipDate {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+
+.tooltipRow {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.tooltipRow + .tooltipRow {
+  margin-top: 6px;
+}
+
+.tooltipLabel {
+  color: var(--gray-400);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.tooltipVal {
+  color: var(--gray-50);
+  font-weight: 600;
+  text-align: right;
+}

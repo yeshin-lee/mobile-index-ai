@@ -1,0 +1,489 @@
+/* Figma file ZYXzz6z5hr3IvP8ZKdVtqB — color/gray/* 참고 */
+.page {
+  --gray-900: #16171d;
+  --gray-850: #242429;
+  --gray-800: #303036;
+  --gray-750: #3c3c43;
+  --gray-700: #484851;
+  --gray-650: #54545f;
+  --gray-600: #60606c;
+  --gray-500: #787887;
+  --gray-400: #93939f;
+  --gray-300: #aeaeb7;
+  --gray-50: #f1f1f3;
+  --primary-300: #ac80f4;
+  --primary-vivid: #8b5cf6;
+  --tab-inactive: #888888;
+  --white: #ffffff;
+  --top-util-bg: #45454a;
+  --top-util-active: #24232d;
+  --content-max: 900px;
+
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--gray-900);
+  color: var(--white);
+  font-family:
+    'Pretendard',
+    'Apple SD Gothic Neo',
+    'Noto Sans KR',
+    system-ui,
+    sans-serif;
+}
+
+.topBar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  height: 32px;
+  background: var(--top-util-bg);
+  border-bottom: 1px solid var(--gray-700);
+  font-size: 12px;
+}
+
+.topBarLeft {
+  display: flex;
+  align-items: stretch;
+}
+
+.topTab {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 16px;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+  text-decoration: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+.topTabActive {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 16px;
+  color: var(--white);
+  white-space: nowrap;
+  text-decoration: none;
+  border: none;
+  background: var(--top-util-active);
+  cursor: default;
+  font: inherit;
+  font-weight: 700;
+}
+
+.enAccent {
+  font-family: Lato, system-ui, sans-serif;
+  font-weight: 700;
+}
+
+.enMuted {
+  font-family: Lato, system-ui, sans-serif;
+  font-weight: 400;
+}
+
+.topDivider {
+  width: 1px;
+  align-self: stretch;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.topBarRight {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding-right: 20px;
+}
+
+.topLink {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+
+.topLinkStrong {
+  color: var(--white);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+
+.contentRow {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.mainLane {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 10px 10px 10px 0;
+  box-sizing: border-box;
+  background: var(--gray-850);
+}
+
+@media (max-width: 640px) {
+  .mainLane {
+    padding: 10px 10px 10px 0;
+  }
+}
+
+.mainCard {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  background: var(--gray-800);
+  overflow: hidden;
+  border: none;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.35),
+    0 1px 2px rgba(0, 0, 0, 0.2);
+  /* contentInner 패딩 대체 — 카드 내부 좌우 여백 */
+  padding: 0 20px;
+  box-sizing: border-box;
+}
+
+.iconRail {
+  width: 90px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 8px;
+  background: transparent;
+  border: none;
+  box-sizing: border-box;
+}
+
+.miHomeWrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.miHomeLogo {
+  width: 30px;
+  height: 30px;
+  display: block;
+  object-fit: contain;
+}
+
+.navStack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.navItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 4px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  color: var(--gray-300);
+  font: inherit;
+  text-align: center;
+}
+
+.navItem:hover {
+  background: var(--gray-750);
+  color: var(--gray-50);
+}
+
+.navItemActive {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 4px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  text-align: center;
+  color: var(--primary-300);
+}
+
+.navItemActive:hover {
+  background: rgba(172, 128, 244, 0.12);
+  color: var(--primary-300);
+}
+
+.navIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  color: var(--gray-400);
+}
+
+.navItem:hover .navIcon {
+  color: var(--gray-50);
+}
+
+.navItemActive .navIcon {
+  color: var(--primary-300);
+}
+
+.navIcon svg {
+  display: block;
+}
+
+.railIconImg {
+  width: 30px;
+  height: 30px;
+  display: block;
+  object-fit: contain;
+}
+
+.railIconSvg {
+  display: block;
+  width: 30px;
+  height: 30px;
+  color: var(--gray-400);
+}
+
+.navItemActive .railIconSvg {
+  color: var(--primary-300);
+}
+
+.navLabel {
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.25;
+  max-width: 60px;
+  white-space: normal;
+  word-break: keep-all;
+}
+
+.chatPanel {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  background: var(--gray-850);
+  border: none;
+  box-sizing: border-box;
+  min-height: 0;
+}
+
+.agentTitle {
+  margin: 0;
+  padding: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--white);
+}
+
+.agentTitleIcon {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: block;
+  object-fit: contain;
+}
+
+.chatList {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.newChat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--white);
+  cursor: pointer;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  text-align: left;
+}
+
+.newChat:hover {
+  background: var(--gray-750);
+}
+
+.newChatIcon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.newChatIcon img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.snbDivider {
+  height: 1px;
+  width: 100%;
+  background: var(--gray-700);
+}
+
+.history {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+}
+
+.historyTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px;
+  color: var(--gray-300);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.historyTitle svg {
+  flex-shrink: 0;
+  color: var(--gray-400);
+}
+
+.historyScroll {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.historyItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--gray-300);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.historyItem:hover {
+  background: rgba(60, 60, 67, 0.5);
+}
+
+.historyItemActive {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: none;
+  background: var(--gray-750);
+  color: var(--white);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.historyItemActive:hover {
+  background: var(--gray-750);
+}
+
+.historyItemText {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pin {
+  flex-shrink: 0;
+  color: var(--primary-300);
+  display: flex;
+}
+
+.moreIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: var(--gray-400);
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: transparent;
+}
+
+.mainColumn {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: 0;
+}
