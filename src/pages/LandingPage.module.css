@@ -299,13 +299,39 @@
   margin-bottom: 64px;
 }
 
+/* Figma `top line` (`24384:10208`) — logo 그룹 + badge, gap 10px */
 .answerHeaderRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.answerHeaderIdentity {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 6px;
   min-width: 0;
-  max-width: 100%;
+}
+
+/* Figma `badge_level` (`24384:10217`) */
+.answerDepthBadge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 5px;
+  border: 1px solid var(--gray-500);
+  border-radius: 4px;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: normal;
+  color: #c9c9cf;
+  white-space: nowrap;
 }
 
 .answerAgentTitle {
@@ -393,38 +419,6 @@
   gap: 4px;
 }
 
-.answerIconBtnWrap {
-  position: relative;
-  display: inline-flex;
-}
-
-.answerIconTooltip {
-  position: absolute;
-  left: 50%;
-  bottom: calc(100% + 8px);
-  transform: translateX(-50%);
-  padding: 4px 8px;
-  border-radius: 6px;
-  background: #e4e4e7;
-  color: #303036;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 1.4;
-  white-space: nowrap;
-  box-shadow: 0 8px 6px rgba(0, 0, 0, 0.16);
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.15s ease, visibility 0.15s ease;
-  z-index: 10;
-}
-
-.answerIconBtnWrap:has(.answerIconBtn:not(:disabled)):hover .answerIconTooltip,
-.answerIconBtnWrap:has(.answerIconBtn:not(:disabled)):focus-within .answerIconTooltip {
-  opacity: 1;
-  visibility: visible;
-}
-
 .answerIconImg {
   display: block;
   width: 20px;
@@ -499,6 +493,210 @@
   background: rgba(255, 255, 255, 0.02);
   color: var(--gray-300);
   font-size: 14px;
+}
+
+/* Figma `followupmap` (`24353:11813`) — 후속 질문 추천 */
+.followupCard {
+  margin-top: 8px;
+  width: 100%;
+  max-width: var(--content-max);
+  background: var(--gray-750);
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.followupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px 12px;
+}
+
+.followupTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: -0.01em;
+  line-height: normal;
+}
+
+.followupHint {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--gray-300);
+  text-align: right;
+  white-space: nowrap;
+  line-height: normal;
+}
+
+.followupBody {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  border-top: 1px solid var(--gray-700);
+  min-height: 200px;
+}
+
+.followupCol {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 32px;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+  transition:
+    flex-grow 360ms cubic-bezier(0.4, 0, 0.2, 1),
+    flex-basis 360ms cubic-bezier(0.4, 0, 0.2, 1),
+    padding 360ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 280ms ease;
+}
+
+.followupColExpansion {
+  /* 3depth column - expanded by default when isExpanded is true */
+}
+
+.followupColCollapsed {
+  flex-grow: 0;
+  flex-basis: 0;
+  padding-left: 0;
+  padding-right: 0;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.followupRootChip {
+  display: inline-flex;
+  align-items: center;
+  background: #9d6af0;
+  color: var(--white);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+  padding: 8px 10px;
+  border-radius: 8px;
+  max-width: 240px;
+  min-width: 0;
+  cursor: default;
+  transition: background-color 0.15s ease;
+}
+
+.followupRootChip:hover {
+  background: var(--primary-300);
+}
+
+.followupChipText {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.followupLines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: visible;
+}
+
+.followupList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+.followupItem {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Figma `nord` (`24335:11869`) — 2뎁스/3뎁스 노드. button reset 적용 */
+.followupChip {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  background: var(--gray-700);
+  border: 1px solid var(--gray-650);
+  color: #e4e4e7;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  max-width: 240px;
+  min-width: 0;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.followupChip:hover {
+  background: var(--gray-600);
+}
+
+.followupChip:focus-visible {
+  outline: 2px solid var(--primary-300);
+  outline-offset: 2px;
+}
+
+.followupAddBtn {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: none;
+  background: var(--gray-400);
+  color: var(--gray-900);
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.followupAddBtn:hover {
+  background: var(--white);
+}
+
+.followupAddBtnActive {
+  background: var(--gray-400);
+}
+
+.followupAddBtn:disabled {
+  cursor: default;
+}
+
+.followupAddBtn svg {
+  width: 12px;
+  height: 12px;
+  display: block;
 }
 
 /* 차트 기본 답변 — Figma `24348:15647` / 차트박스 `24354:14701` 참고 */
@@ -718,16 +916,18 @@
   box-sizing: border-box;
 }
 
+/* Figma `table` (`24354:15945`) — 272px 고정, 내부 스크롤 */
 .chartTableWrap {
-  height: 100%;
+  height: 272px;
   min-height: 0;
   min-width: 0;
   width: 100%;
   max-width: 100%;
   align-self: stretch;
-  overflow: auto;
-  border: none;
-  outline: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid var(--gray-600);
+  border-radius: 6px;
   background: transparent;
   padding: 0;
   margin: 0;
@@ -737,25 +937,46 @@
 .chartTable {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
-  color: var(--gray-50);
+  table-layout: fixed;
+  color: var(--white);
 }
 
 .chartTh,
 .chartTd {
-  padding: 6px 8px;
-  text-align: right;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: left;
+  border-right: 1px solid var(--gray-650);
+  border-bottom: 1px solid var(--gray-650);
+  word-break: break-word;
 }
 
-.chartTh:first-child,
-.chartTd:first-child {
-  text-align: left;
+.chartTh:last-child,
+.chartTd:last-child {
+  border-right: none;
 }
 
 .chartTh {
-  font-weight: 600;
-  color: var(--gray-300);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 8px 16px;
+  background: var(--gray-650);
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  border-right-color: var(--gray-600);
+}
+
+.chartTd {
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #d6d6db;
+}
+
+.chartTable tbody tr:last-child .chartTd {
+  border-bottom: none;
 }
 
 .chartLegend {
@@ -1514,29 +1735,28 @@
   white-space: nowrap;
 }
 
+/**
+ * Figma `btn_send` (`24348:14559`) — disabled / active / pause 3가지 상태
+ * 32x32 원형 컨테이너가 background/border를 담당하고
+ * `ico_send.svg`(비행기), `ico_pause.svg`(정지 사각형)는 내부 글리프만 그림.
+ */
 .sendBtn {
   width: 32px;
   height: 32px;
   border-radius: 999px;
   border: none;
   background: var(--gray-650);
-  cursor: not-allowed;
+  padding: 0;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
-  flex-shrink: 0;
-  transition:
-    background 0.15s ease,
-    opacity 0.15s ease;
+  cursor: not-allowed;
+  transition: background 0.15s ease, transform 0.15s ease;
 }
 
 .sendBtn:disabled {
   cursor: not-allowed;
-}
-
-.sendBtn:disabled .sendIcon {
-  opacity: 0.45;
 }
 
 .sendBtnActive {
@@ -1545,26 +1765,27 @@
 }
 
 .sendBtnActive:hover {
-  background: #f0f0f2;
+  transform: scale(1.04);
 }
 
-.sendBtnActive .sendIcon {
-  opacity: 1;
+.sendBtnActive:active {
+  transform: scale(0.96);
+}
+
+.sendBtnPause {
+  background: transparent;
+  border: 1px solid var(--gray-300);
+  cursor: not-allowed;
 }
 
 .sendIcon {
-  width: 18px;
-  height: 18px;
+  width: 32px;
+  height: 32px;
   display: block;
   object-fit: contain;
 }
 
-.sendIconActive {
-  filter: brightness(0) saturate(100%);
-  opacity: 0.88;
-}
-
-.sendBtn:focus-visible.sendBtnActive {
+.sendBtn:focus-visible {
   outline: 2px solid var(--primary-300);
   outline-offset: 2px;
 }

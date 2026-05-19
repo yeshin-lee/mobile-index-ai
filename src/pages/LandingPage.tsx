@@ -2,6 +2,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -11,41 +12,28 @@ import {
   MockComboRechartsChart,
 } from '../components/MockComboRechartsChart'
 import Layout from '../components/Layout'
+import { TooltipWrap } from '../components/TooltipWrap'
 import imgAppicon from '../assets/img_appicon.png'
+import icoBookmark from '../assets/ico_boomark.svg'
+import icoCheck from '../assets/ico_check.svg'
 import icoCopy from '../assets/ico_copy.svg'
 import icoDownload from '../assets/ico_download.svg'
 import icoExcel from '../assets/ico_excel.svg'
 import icoExpand from '../assets/ico_expand.svg'
 import icoFeedback from '../assets/ico_feedback.svg'
+import icoPause from '../assets/ico_pause.svg'
 import icoReplay from '../assets/ico_replay.svg'
+import icoSend from '../assets/ico_send.svg'
 import icoShare2 from '../assets/ico_share2.svg'
+import icoSymbol from '../assets/ico_symbol.svg'
 import styles from './LandingPage.module.css'
 
-/** 히어로 타이틀 — `분석` 우측 스파클 (`234:4980` title / `246:5013`) */
-const ASSET_HERO_TITLE_SPARKLE =
-  'https://www.figma.com/api/mcp/asset/11e7d822-f001-4d5a-9c17-a707f18602ac'
-
-/** Figma `btn_send` (`24348:14559`) — 전송 아이콘 */
-const ASSET_SEND_PLANE =
-  'https://www.figma.com/api/mcp/asset/713f57ce-2f82-434d-a1db-6f7d7f73e4a2'
-/** Figma `chips` 드롭다운 선택 체크 (`24345:10060` / `ico_check`) */
-const ASSET_ANSWER_CHECK =
-  'https://www.figma.com/api/mcp/asset/4b09d4e2-b50d-4832-a831-e227f97635a3'
-/** Figma `bookmark` 트리거 별 (`24345:11570` / `ico_boomark`) */
-const ASSET_BOOKMARK_STAR =
-  'https://www.figma.com/api/mcp/asset/b6ba9c09-9a27-4bba-af50-4980c4f24862'
-/** Figma `dropdown` 목록 별 active (`24345:11707` / `BoomarkSymbol`) */
-const ASSET_BOOKMARK_ROW_STAR =
-  'https://www.figma.com/api/mcp/asset/f4c0558f-5ea1-4552-804e-6f2e9a419b03'
-/** Figma 말풍선 별 비활성 (`24348:13423` / star_border) */
+/** Figma 말풍선 별 비활성 (`24348:13423` / star_border) — 채팅 헤더 토글용 잔존 */
 const ASSET_CHAT_STAR_BORDER =
   'https://www.figma.com/api/mcp/asset/12829668-26c2-483b-b146-1e12a124ae2e'
-/** Figma 즐겨찾기 별 활성 (`24345:11875` / star) */
+/** Figma 즐겨찾기 별 활성 (`24345:11875` / star) — 채팅 헤더 토글용 잔존 */
 const ASSET_CHAT_STAR_FILLED =
   'https://www.figma.com/api/mcp/asset/daa38519-f4e8-4647-9374-ad535fb15705'
-/** Figma 로딩 MI AI Agent 아이콘 30px (`24348:12684` / icon_gnb_chart_default) */
-const ASSET_MI_AGENT_LOADING_ICON =
-  'https://www.figma.com/api/mcp/asset/ec48f7b3-70fb-481d-a58c-89bad4d21820'
 const TABS = ['현황 파악', '변화 추적', '원인 탐색', '향후 예측'] as const
 
 const ANSWER_OPTIONS = [
@@ -109,6 +97,313 @@ function IconPlus() {
   )
 }
 
+/**
+ * Figma `followupmap` (`24353:11813`) — 후속 질문 추천 (default 상태)
+ * 좌측: 현재 질문 (1depth, primary-350 chip)
+ * 우측: 추천 질문 4개 (2depth, gray-700 chip + 16x16 add 버튼)
+ * 가운데: 4갈래 가지치기 라인
+ *
+ * 인터랙션(+ 버튼 클릭으로 3depth 확장)은 2단계에서 추가 예정.
+ */
+type FollowupContext = 'chart' | 'text'
+
+type FollowupSuggestion = {
+  label: string
+  expansions: readonly string[]
+}
+
+const FOLLOWUP_CONTENT: Record<
+  FollowupContext,
+  { suggestions: readonly FollowupSuggestion[] }
+> = {
+  chart: {
+    suggestions: [
+      {
+        label: '쿠팡과 G마켓의 향후 MAU 비교 예측',
+        expansions: ['G마켓 향후 MAU 변화 예측', '쿠팡 vs G마켓 사용자층 비교'],
+      },
+      {
+        label: '쿠팡 신규 설치 건수가 가장 높았던 시점 분석',
+        expansions: ['쿠팡 11월 신규 설치 급증 원인', '쿠팡 설치 후 재방문율 추이'],
+      },
+      {
+        label: '향후 쿠팡 MAU 증가 요인 분석',
+        expansions: ['신규 캠페인 영향 분석', '핵심 사용자 유입 채널'],
+      },
+      {
+        label: '쿠팡 MAU 성장세가 둔화될 가능성',
+        expansions: ['경쟁사 점유율 변화 추이', '주요 지표 둔화 신호'],
+      },
+    ],
+  },
+  text: {
+    suggestions: [
+      {
+        label: '모바일인덱스 INSIGHT 요금제 안내',
+        expansions: ['무료 체험 신청 방법', '기업 요금제 종류'],
+      },
+      {
+        label: '무료 제공 기능 범위',
+        expansions: ['무료 조회 가능 지표 종류', '무료 데이터 조회 기간'],
+      },
+      {
+        label: '경쟁사 앱 비교 분석 가능 여부',
+        expansions: ['비교 가능 앱 수 제한', '비교 분석 제공 지표 항목'],
+      },
+      {
+        label: '데이터 업데이트 주기',
+        expansions: ['OS별 데이터 업데이트 차이', '실시간 데이터 제공 여부'],
+      },
+    ],
+  },
+}
+
+const FOLLOWUP_TRANSITION_MS = 360
+const ICON_PATH_ADD = 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z'
+const ICON_PATH_REMOVE = 'M19 13H5v-2h14v2z'
+
+function FollowupMap({
+  context,
+  rootQuestion,
+  onSelect,
+}: {
+  context: FollowupContext
+  rootQuestion: string
+  onSelect: (text: string) => void
+}) {
+  const { suggestions } = FOLLOWUP_CONTENT[context]
+  const [expandedIdx, setExpandedIdx] = useState<number | null>(null)
+  const expandedItem = expandedIdx !== null ? suggestions[expandedIdx] : null
+  const isExpanded = expandedItem !== null
+
+  useEffect(() => {
+    setExpandedIdx(null)
+  }, [context])
+
+  const bodyRef = useRef<HTMLDivElement | null>(null)
+  const rootRef = useRef<HTMLSpanElement | null>(null)
+  const itemRefs = useRef<Array<HTMLElement | null>>([])
+  const expandBtnRefs = useRef<Array<HTMLButtonElement | null>>([])
+  const expansionRefs = useRef<Array<HTMLElement | null>>([])
+  const [primaryPaths, setPrimaryPaths] = useState<string[]>([])
+  const [secondaryPaths, setSecondaryPaths] = useState<string[]>([])
+  const [svgSize, setSvgSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 })
+
+  useLayoutEffect(() => {
+    const compute = () => {
+      const body = bodyRef.current
+      const root = rootRef.current
+      if (!body || !root) return
+      const bRect = body.getBoundingClientRect()
+      const rRect = root.getBoundingClientRect()
+      const startX = rRect.right - bRect.left
+      const startY = rRect.top - bRect.top + rRect.height / 2
+
+      const next: string[] = []
+      for (let i = 0; i < suggestions.length; i++) {
+        const item = itemRefs.current[i]
+        if (!item) continue
+        const iRect = item.getBoundingClientRect()
+        const endX = iRect.left - bRect.left
+        const endY = iRect.top - bRect.top + iRect.height / 2
+        const dx = endX - startX
+        const c1x = startX + dx * 0.5
+        const c2x = endX - dx * 0.5
+        next.push(
+          `M ${startX} ${startY} C ${c1x} ${startY}, ${c2x} ${endY}, ${endX} ${endY}`,
+        )
+      }
+
+      const secondary: string[] = []
+      if (expandedIdx !== null && expandedItem) {
+        // 2depth → 3depth 선은 노드가 아닌 '−' 버튼 우측 중앙에서 시작한다.
+        const source = expandBtnRefs.current[expandedIdx]
+        if (source) {
+          const sRect = source.getBoundingClientRect()
+          const sStartX = sRect.right - bRect.left
+          const sStartY = sRect.top - bRect.top + sRect.height / 2
+          for (let i = 0; i < expandedItem.expansions.length; i++) {
+            const exp = expansionRefs.current[i]
+            if (!exp) continue
+            const eRect = exp.getBoundingClientRect()
+            const endX = eRect.left - bRect.left
+            const endY = eRect.top - bRect.top + eRect.height / 2
+            const dx = endX - sStartX
+            const c1x = sStartX + dx * 0.5
+            const c2x = endX - dx * 0.5
+            secondary.push(
+              `M ${sStartX} ${sStartY} C ${c1x} ${sStartY}, ${c2x} ${endY}, ${endX} ${endY}`,
+            )
+          }
+        }
+      }
+
+      setSvgSize({ w: bRect.width, h: bRect.height })
+      setPrimaryPaths(next)
+      setSecondaryPaths(secondary)
+    }
+
+    compute()
+
+    // 2depth ↔ 3depth 레이아웃 전환 중에는 ResizeObserver가 매 프레임 발화하지 않을 수 있어서
+    // 전환 지속 시간 동안 requestAnimationFrame으로 path 좌표를 함께 보간해준다.
+    let rafId = 0
+    const startTime = performance.now()
+    const followFrame = (now: number) => {
+      compute()
+      if (now - startTime < FOLLOWUP_TRANSITION_MS + 60) {
+        rafId = requestAnimationFrame(followFrame)
+      }
+    }
+    rafId = requestAnimationFrame(followFrame)
+
+    const ro = new ResizeObserver(compute)
+    if (bodyRef.current) ro.observe(bodyRef.current)
+    if (rootRef.current) ro.observe(rootRef.current)
+    for (const el of itemRefs.current) {
+      if (el) ro.observe(el)
+    }
+    for (const el of expandBtnRefs.current) {
+      if (el) ro.observe(el)
+    }
+    for (const el of expansionRefs.current) {
+      if (el) ro.observe(el)
+    }
+    window.addEventListener('resize', compute)
+    return () => {
+      cancelAnimationFrame(rafId)
+      ro.disconnect()
+      window.removeEventListener('resize', compute)
+    }
+  }, [context, expandedIdx, expandedItem, suggestions])
+
+  return (
+    <section className={styles.followupCard} aria-label="후속 질문 추천">
+      <header className={styles.followupHeader}>
+        <h3 className={styles.followupTitle}>후속 질문 추천</h3>
+        <p className={styles.followupHint}>
+          후속 질문을 클릭하거나 ‘+’ 버튼을 통해 확장해 보세요.
+        </p>
+      </header>
+      <div
+        className={`${styles.followupBody}${
+          isExpanded ? ` ${styles.followupBodyExpanded}` : ''
+        }`}
+        ref={bodyRef}
+      >
+        <svg
+          className={styles.followupLines}
+          width={svgSize.w || 0}
+          height={svgSize.h || 0}
+          viewBox={`0 0 ${svgSize.w || 1} ${svgSize.h || 1}`}
+          aria-hidden
+        >
+          {primaryPaths.map((d, i) => (
+            <path
+              key={`p-${i}`}
+              d={d}
+              stroke="#60606C"
+              strokeWidth={1.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
+          ))}
+          {secondaryPaths.map((d, i) => (
+            <path
+              key={`s-${i}`}
+              d={d}
+              stroke="#60606C"
+              strokeWidth={1.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
+          ))}
+        </svg>
+        <div className={styles.followupCol}>
+          <TooltipWrap label={rootQuestion}>
+            <span className={styles.followupRootChip} ref={rootRef}>
+              <span className={styles.followupChipText}>{rootQuestion}</span>
+            </span>
+          </TooltipWrap>
+        </div>
+        <div className={styles.followupCol}>
+          <ul className={styles.followupList}>
+            {suggestions.map((s, idx) => {
+              const expanded = idx === expandedIdx
+              return (
+                <li key={s.label} className={styles.followupItem}>
+                  <TooltipWrap label={s.label}>
+                    <button
+                      type="button"
+                      className={styles.followupChip}
+                      ref={(el) => {
+                        itemRefs.current[idx] = el
+                      }}
+                      onClick={() => onSelect(s.label)}
+                    >
+                      <span className={styles.followupChipText}>{s.label}</span>
+                    </button>
+                  </TooltipWrap>
+                  <TooltipWrap label={expanded ? '확장 질문 접기' : '질문 확장하기'}>
+                    <button
+                      type="button"
+                      className={`${styles.followupAddBtn}${
+                        expanded ? ` ${styles.followupAddBtnActive}` : ''
+                      }`}
+                      aria-label={`${s.label} ${expanded ? '접기' : '확장'}`}
+                      aria-pressed={expanded}
+                      ref={(el) => {
+                        expandBtnRefs.current[idx] = el
+                      }}
+                      onClick={() => setExpandedIdx(expanded ? null : idx)}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden>
+                        <path
+                          d={expanded ? ICON_PATH_REMOVE : ICON_PATH_ADD}
+                          fill="currentColor"
+                        />
+                      </svg>
+                    </button>
+                  </TooltipWrap>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+        <div
+          className={`${styles.followupCol} ${styles.followupColExpansion}${
+            isExpanded ? '' : ` ${styles.followupColCollapsed}`
+          }`}
+          aria-hidden={!isExpanded}
+        >
+          {expandedItem ? (
+            <ul className={styles.followupList}>
+              {expandedItem.expansions.map((q, idx) => (
+                <li key={q} className={styles.followupItem}>
+                  <TooltipWrap label={q}>
+                    <button
+                      type="button"
+                      className={styles.followupChip}
+                      ref={(el) => {
+                        expansionRefs.current[idx] = el
+                      }}
+                      onClick={() => onSelect(q)}
+                    >
+                      <span className={styles.followupChipText}>{q}</span>
+                    </button>
+                  </TooltipWrap>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function AnswerActionIconBtn({
   label,
   tooltip,
@@ -123,7 +418,7 @@ function AnswerActionIconBtn({
   onClick?: () => void
 }) {
   return (
-    <span className={styles.answerIconBtnWrap}>
+    <TooltipWrap label={tooltip} disabled={disabled}>
       <button
         type="button"
         className={styles.answerIconBtn}
@@ -133,10 +428,7 @@ function AnswerActionIconBtn({
       >
         <img src={iconSrc} alt="" width={20} height={20} className={styles.answerIconImg} />
       </button>
-      <span className={styles.answerIconTooltip} role="tooltip">
-        {tooltip}
-      </span>
-    </span>
+    </TooltipWrap>
   )
 }
 
@@ -200,24 +492,14 @@ const CHART_DEEP_INTRO_TEXT =
 const CHART_DEEP_INTRO_HIGHLIGHTS = ['꾸준한 증가세', '8.5% 증가', '11월 집중 증가'] as const
 
 const CHART_INDICATOR_PLAIN =
-  '쿠팡의 MAU는 2024년 4월 대비 2025년 3월까지 꾸준한 증가세를 보이며, 1년간 257만 가량 증가해 안정적인 사용자 기반을 유지하고 있습니다. 신규 설치 건수는 11월 시점에 집중 증가하는 패턴이 반복되고 있습니다.'
-
-const CHART_FORECAST_PLAIN =
-  '지난 1년간의 추이를 바탕으로, 향후 쿠팡의 MAU는 전년 대비 일정 부분 증가할 것으로 예측됩니다. 또한 매년 정기적으로 진행되는 대규모 할인 행사 시점인 11월에 사용자 수가 집중 증가할 것으로 예측됩니다.'
+  '쿠팡의 MAU는 2024년 4월 대비 2025년 3월까지 꾸준한 증가세를 보이며, 1년간 257만 가량 증가해 안정적인 사용자 기반을 유지하고 있습니다. 신규 설치 건수는 11월 시점에 집중 증가하는 패턴이 반복되고 있으며, 현재 추이를 바탕으로 향후에도 지속적인 증가가 예측됩니다.'
 
 const CHART_INDICATOR_BODY = (
   <>
     쿠팡의 MAU는 2024년 4월 대비 2025년 3월까지 꾸준한 증가세를 보이며, 1년간{' '}
     <strong>257만 가량 증가</strong>해 안정적인 사용자 기반을 유지하고 있습니다. 신규 설치 건수는{' '}
-    <strong>11월 시점</strong>에 집중 증가하는 패턴이 반복되고 있습니다.
-  </>
-)
-
-const CHART_FORECAST_BODY = (
-  <>
-    지난 1년간의 추이를 바탕으로, 향후 쿠팡의 MAU는 전년 대비{' '}
-    <strong>일정 부분 증가</strong>할 것으로 예측됩니다. 또한 매년 정기적으로 진행되는{' '}
-    <strong>대규모 할인 행사 시점인 11월</strong>에 사용자 수가 집중 증가할 것으로 예측됩니다.
+    <strong>11월 시점</strong>에 집중 증가하는 패턴이 반복되고 있으며, 현재 추이를 바탕으로
+    향후에도 <strong>지속적인 증가</strong>가 예측됩니다.
   </>
 )
 
@@ -310,7 +592,7 @@ function assistantPlainText(line: Extract<ChatLine, { role: 'assistant' }>): str
         .join('\n\n')
         .trim()
     }
-    return `${line.content}\n\n${CHART_CARD_TITLE}\n\n지표 설명: ${ind}\n\n향후 예측: ${fore}`.trim()
+    return `${line.content}\n\n${CHART_CARD_TITLE}\n\n지표 설명: ${ind}`.trim()
   }
   return line.content
 }
@@ -530,17 +812,21 @@ function ChartMockCard() {
               <table className={styles.chartTable}>
                 <thead>
                   <tr>
-                    <th className={styles.chartTh}>월</th>
-                    <th className={styles.chartTh}>신규 설치</th>
-                    <th className={styles.chartTh}>MAU</th>
+                    <th className={styles.chartTh}>날짜</th>
+                    <th className={styles.chartTh}>월간 사용자 수 (MAU)</th>
+                    <th className={styles.chartTh}>신규 설치 건 수</th>
                   </tr>
                 </thead>
                 <tbody>
                   {CHART_MONTH_LABELS.map((m, i) => (
                     <tr key={m}>
                       <td className={styles.chartTd}>{m}</td>
-                      <td className={styles.chartTd}>{CHART_BAR_SERIES[i]}</td>
-                      <td className={styles.chartTd}>{CHART_LINE_SERIES[i]}</td>
+                      <td className={styles.chartTd}>
+                        {CHART_LINE_SERIES[i]?.toLocaleString('ko-KR')}명
+                      </td>
+                      <td className={styles.chartTd}>
+                        {CHART_BAR_SERIES[i]?.toLocaleString('ko-KR')}건
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -607,6 +893,16 @@ export default function LandingPage() {
     return crypto.randomUUID()
   }
 
+  function handleResetToHome() {
+    streamAbortRef.current?.abort()
+    streamAbortRef.current = null
+    setIsSending(false)
+    setLoadingVariant('basic')
+    setOpenMenu(null)
+    setThread([])
+    setMessage('')
+  }
+
   function applyQuestionToComposer(text: string) {
     setMessage(text)
     queueMicrotask(() => {
@@ -626,13 +922,20 @@ export default function LandingPage() {
     )
   }
 
-  async function runMockAssistantStream(payload: StreamPayload) {
+  async function runMockAssistantStream(payload: StreamPayload, isDeepAnswer: boolean) {
     streamAbortRef.current?.abort()
     const ac = new AbortController()
     streamAbortRef.current = ac
     setIsSending(true)
+    setLoadingVariant('basic')
     try {
-      await sleep(1000 + Math.random() * 1000, ac.signal)
+      if (isDeepAnswer) {
+        await sleep(7000, ac.signal)
+        setLoadingVariant('complex')
+        await sleep(5000, ac.signal)
+      } else {
+        await sleep(2000 + Math.random() * 1000, ac.signal)
+      }
       if (payload.kind === 'unavailable') {
         const full = payload.text
         await streamTextByWords(full, ac.signal, (slice) => {
@@ -736,17 +1039,6 @@ export default function LandingPage() {
               return next
             })
           })
-        } else {
-          await streamTextByWords(CHART_FORECAST_PLAIN, ac.signal, (slice) => {
-            setThread((prev) => {
-              const next = [...prev]
-              const last = next[next.length - 1]
-              if (last?.role === 'assistant') {
-                next[next.length - 1] = { ...last, chartForecastText: slice }
-              }
-              return next
-            })
-          })
         }
       } else {
         await streamTextByWords(payload.text, ac.signal, (slice) => {
@@ -772,12 +1064,13 @@ export default function LandingPage() {
       if (e instanceof DOMException && e.name === 'AbortError') return
     } finally {
       setIsSending(false)
+      setLoadingVariant('basic')
       streamAbortRef.current = null
     }
   }
 
-  async function handleSendQuestion() {
-    const question = message.trim()
+  async function handleSendQuestion(override?: string) {
+    const question = (override ?? message).trim()
     if (!question || isSending) return
 
     setOpenMenu(null)
@@ -801,9 +1094,7 @@ export default function LandingPage() {
 
     setThread((prev) => [...prev, userLine, asstLine])
 
-    setLoadingVariant(answerMode === '심화 답변' ? 'complex' : 'basic')
-
-    await runMockAssistantStream(payload)
+    await runMockAssistantStream(payload, answerMode === '심화 답변')
   }
 
   async function handleCopyAnswer(text: string) {
@@ -858,7 +1149,7 @@ export default function LandingPage() {
       },
     ]
     setThread(next)
-    await runMockAssistantStream(payload)
+    await runMockAssistantStream(payload, answerMode === '심화 답변')
   }
 
   useEffect(() => {
@@ -883,18 +1174,6 @@ export default function LandingPage() {
     }
   }, [favoriteQuestions.length, openMenu])
 
-  useEffect(() => {
-    if (!isSending || answerMode === '심화 답변') return
-    const timer = window.setTimeout(() => setLoadingVariant('complex'), 10000)
-    return () => window.clearTimeout(timer)
-  }, [answerMode, isSending, thread])
-
-  useEffect(() => {
-    if (isSending && answerMode === '심화 답변') {
-      setLoadingVariant('complex')
-    }
-  }, [answerMode, isSending])
-
   useEffect(
     () => () => {
       streamAbortRef.current?.abort()
@@ -918,7 +1197,7 @@ export default function LandingPage() {
       : 'MI AI Agent에게 무엇이든 물어보세요.'
 
   return (
-    <Layout>
+    <Layout onResetToHome={handleResetToHome}>
       {showChatHeader ? (
         <header className={styles.chatHeader}>
           <h2 className={styles.chatHeaderTitle}>{headerQuestionText}</h2>
@@ -991,7 +1270,7 @@ export default function LandingPage() {
                     >
                       <div className={styles.loadingLogoRow}>
                         <img
-                          src={ASSET_MI_AGENT_LOADING_ICON}
+                          src={icoSymbol}
                           alt=""
                           width={30}
                           height={30}
@@ -1038,9 +1317,7 @@ export default function LandingPage() {
                 const chartIns2 = assistantLine.chartInsight2Text ?? ''
                 const chartIndComplete = isTypedComplete(chartInd, CHART_INDICATOR_PLAIN)
                 const chartCauseComplete = isTypedComplete(chartCause, CHART_CAUSE_PLAIN)
-                const chartForeComplete = isDeepChart
-                  ? isTypedComplete(chartFore, CHART_DEEP_FORECAST_PLAIN)
-                  : isTypedComplete(chartFore, CHART_FORECAST_PLAIN)
+                const chartForeComplete = isTypedComplete(chartFore, CHART_DEEP_FORECAST_PLAIN)
                 const chartIns1Complete = isTypedComplete(chartIns1, CHART_INSIGHT_ITEM1_PLAIN)
                 const chartIns2Complete = isTypedComplete(chartIns2, CHART_INSIGHT_ITEM2_PLAIN)
                 const chartReplyComplete =
@@ -1053,8 +1330,8 @@ export default function LandingPage() {
                         chartForeComplete &&
                         chartIns1Complete &&
                         chartIns2Complete
-                      : chartForeComplete) &&
-                    !isSending)
+                      : true) &&
+                    !(isLast && isSending))
 
                 const showAnswerFooter =
                   Boolean(line.content) && !(isLast && isSending) && chartReplyComplete
@@ -1062,14 +1339,19 @@ export default function LandingPage() {
                 return (
                   <article key={line.id} className={styles.answerArticle}>
                     <div className={styles.answerHeaderRow}>
-                      <img
-                        src={ASSET_MI_AGENT_LOADING_ICON}
-                        alt=""
-                        width={30}
-                        height={30}
-                        className={styles.loadingAgentIcon}
-                      />
-                      <span className={styles.answerAgentTitle}>MI AI Agent</span>
+                      <div className={styles.answerHeaderIdentity}>
+                        <img
+                          src={icoSymbol}
+                          alt=""
+                          width={30}
+                          height={30}
+                          className={styles.loadingAgentIcon}
+                        />
+                        <span className={styles.answerAgentTitle}>MI AI Agent</span>
+                      </div>
+                      {isDeepChart ? (
+                        <span className={styles.answerDepthBadge}>심화</span>
+                      ) : null}
                     </div>
                     <div className={styles.answerBody}>
                       {assistantLine.replyKind === 'chart' ? (
@@ -1109,16 +1391,12 @@ export default function LandingPage() {
                                   )}
                                 </div>
                               ) : null}
-                              {chartIndComplete && (!isDeepChart || chartCauseComplete) ? (
+                              {isDeepChart && chartIndComplete && chartCauseComplete ? (
                                 <div className={styles.answerSectionBlock}>
-                                  <h4 className={styles.answerSectionTitle}>
-                                    {isDeepChart ? '📌 향후 예측' : '🚀 향후 예측'}
-                                  </h4>
+                                  <h4 className={styles.answerSectionTitle}>📌 향후 예측</h4>
                                   {chartForeComplete ? (
                                     <div className={styles.answerSectionBody}>
-                                      {isDeepChart
-                                        ? CHART_DEEP_FORECAST_BODY
-                                        : CHART_FORECAST_BODY}
+                                      {CHART_DEEP_FORECAST_BODY}
                                     </div>
                                   ) : (
                                     <p className={styles.answerSectionBody}>{chartFore}</p>
@@ -1236,6 +1514,29 @@ export default function LandingPage() {
                           </button>
                         </div>
                       ) : null}
+                      {(() => {
+                        if (
+                          !showAnswerFooter ||
+                          (assistantLine.replyKind !== 'chart' &&
+                            assistantLine.replyKind !== 'text')
+                        ) {
+                          return null
+                        }
+                        const prev = thread[index - 1]
+                        const previousUserQuestion =
+                          prev && prev.role === 'user' ? prev.content : ''
+                        if (!previousUserQuestion) return null
+                        return (
+                          <FollowupMap
+                            context={assistantLine.replyKind}
+                            rootQuestion={previousUserQuestion}
+                            onSelect={(text) => {
+                              setMessage(text)
+                              void handleSendQuestion(text)
+                            }}
+                          />
+                        )
+                      })()}
                     </div>
                   </article>
                 )
@@ -1252,7 +1553,7 @@ export default function LandingPage() {
                     <span className={styles.heroLine2}>
                       <span className={styles.heroGradient}>똑똑하게 데이터를 분석</span>
                       <img
-                        src={ASSET_HERO_TITLE_SPARKLE}
+                        src={icoSymbol}
                         alt=""
                         width={30}
                         height={30}
@@ -1374,7 +1675,7 @@ export default function LandingPage() {
                           {selected ? (
                             <span className={styles.answerOptionCheck}>
                               <img
-                                src={ASSET_ANSWER_CHECK}
+                                src={icoCheck}
                                 alt=""
                                 width={10}
                                 height={8}
@@ -1407,7 +1708,7 @@ export default function LandingPage() {
                     }
                   >
                     <img
-                      src={ASSET_BOOKMARK_STAR}
+                      src={icoBookmark}
                       alt=""
                       width={20}
                       height={20}
@@ -1455,7 +1756,7 @@ export default function LandingPage() {
                               }}
                             >
                               <img
-                                src={ASSET_BOOKMARK_ROW_STAR}
+                                src={icoBookmark}
                                 alt=""
                                 width={17}
                                 height={16}
@@ -1471,10 +1772,14 @@ export default function LandingPage() {
                 <button
                   type="button"
                   className={
-                    sendDisabled ? styles.sendBtn : `${styles.sendBtn} ${styles.sendBtnActive}`
+                    isSending
+                      ? `${styles.sendBtn} ${styles.sendBtnPause}`
+                      : sendDisabled
+                        ? styles.sendBtn
+                        : `${styles.sendBtn} ${styles.sendBtnActive}`
                   }
                   disabled={sendDisabled}
-                  aria-label="메시지 보내기"
+                  aria-label={isSending ? '응답 생성 중' : '메시지 보내기'}
                   onClick={() => {
                     setOpenMenu(null)
                     if (!sendDisabled) {
@@ -1483,13 +1788,11 @@ export default function LandingPage() {
                   }}
                 >
                   <img
-                    src={ASSET_SEND_PLANE}
+                    src={isSending ? icoPause : icoSend}
                     alt=""
-                    width={18}
-                    height={18}
-                    className={
-                      sendDisabled ? styles.sendIcon : `${styles.sendIcon} ${styles.sendIconActive}`
-                    }
+                    width={32}
+                    height={32}
+                    className={styles.sendIcon}
                   />
                 </button>
               </div>

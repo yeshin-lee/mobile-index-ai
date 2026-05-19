@@ -1,0 +1,34 @@
+/**
+ * UI 호버 툴팁 공통 스타일 (Figma `24348:16352`)
+ * — `TooltipWrap`과 함께 사용. 차트 Recharts 툴팁은 별도 모듈입니다.
+ */
+
+.uiTooltipWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.uiTooltip {
+  position: fixed;
+  z-index: 10000;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #e4e4e7;
+  color: #303036;
+  font-family: Pretendard, system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  white-space: nowrap;
+  box-shadow: 0 8px 6px rgba(0, 0, 0, 0.16);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-50%);
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+
+.uiTooltip--visible {
+  opacity: 1;
+  visibility: visible;
+}

@@ -116,11 +116,13 @@ function ChartTooltipContent({
       <p className={styles.tooltipDate}>{row.month}</p>
       <div className={styles.tooltipRow}>
         <span className={styles.tooltipLabel}>MAU</span>
-        <span className={styles.tooltipVal}>{row.mau.toLocaleString('ko-KR')}</span>
+        <span className={styles.tooltipVal}>{row.mau.toLocaleString('ko-KR')}명</span>
       </div>
       <div className={styles.tooltipRow}>
         <span className={styles.tooltipLabel}>신규 설치</span>
-        <span className={styles.tooltipVal}>{row.installs.toLocaleString('ko-KR')}</span>
+        <span className={styles.tooltipVal}>
+          {row.installs.toLocaleString('ko-KR')}건
+        </span>
       </div>
     </div>
   )

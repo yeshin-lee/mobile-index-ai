@@ -1,44 +1,26 @@
 import type { ReactNode } from 'react'
 import styles from './Layout.module.css'
 import miHomePng from '../assets/gnb/mi-home.png'
-import consumptionPng from '../assets/gnb/consumption.png'
+import icoSnb01 from '../assets/ico_snb01.svg'
+import icoSnb02 from '../assets/ico_snb02.svg'
+import icoSnb03 from '../assets/ico_snb03.svg'
+import icoSnb04 from '../assets/ico_snb04.svg'
+import icoSnb05 from '../assets/ico_snb05.svg'
+import icoSnb06 from '../assets/ico_snb06.svg'
+import icoSnb07 from '../assets/ico_snb07.svg'
+import icoSnb08 from '../assets/ico_snb08.svg'
+import icoSymbol from '../assets/ico_symbol.svg'
+import icoNewChat from '../assets/ico_newchat.svg'
 
-/**
- * Figma MCP — ZYXzz6z5hr3IvP8ZKdVtqB
- * - GNB `0depth` (92:1448)
- * - 우측 패널 로고 행 (24344:9794)
- * - 상품안내 행 (92:1518) — `icon_gnb_more_default` (전용 익스포트)
- */
-const GNB_ICON_FROM_FIGMA = {
-  agentChart:
-    'https://www.figma.com/api/mcp/asset/756122e8-9f1c-48dc-b622-1756708dba64',
-  miChart:
-    'https://www.figma.com/api/mcp/asset/b44c4cba-0512-45e1-85d6-3f12e3ea9c88',
-  market:
-    'https://www.figma.com/api/mcp/asset/872c0712-d72d-47b5-9e0b-6c870b0ac3ea',
-  usage:
-    'https://www.figma.com/api/mcp/asset/27fd5ce0-d9ed-4545-a36b-15c38a82aef5',
-  more:
-    'https://www.figma.com/api/mcp/asset/7044d4e4-290a-41c1-9762-76b8e32837d7',
-  productGuide:
-    'https://www.figma.com/api/mcp/asset/91aad170-2daa-4a8d-ae61-1cb14cec13a9',
-} as const
-
-const ASSET_MI_AI_HEADER_LOGO =
-  'https://www.figma.com/api/mcp/asset/3470ce69-7acf-456e-a7ea-86bc5f1c5d85'
-
-const ASSET_NEW_CHAT =
-  'https://www.figma.com/api/mcp/asset/dd5a1ba5-d3df-444c-bed1-631cdb06afba'
-
-const NAV_ITEMS: { id: string; label: string; active?: boolean }[] = [
-  { id: 'agent', label: 'MI AI Agent', active: true },
-  { id: 'chart', label: 'MI CHART' },
-  { id: 'market', label: '앱 마켓 인덱스' },
-  { id: 'usage', label: '사용량 인덱스' },
-  { id: 'consumption', label: '소비 인덱스' },
-  { id: 'report', label: '인사이트 리포트' },
-  { id: 'cs', label: '고객센터' },
-  { id: 'product', label: '상품안내' },
+const NAV_ITEMS: { id: string; label: string; icon: string; active?: boolean }[] = [
+  { id: 'agent', label: 'MI AI Agent', icon: icoSnb01, active: true },
+  { id: 'chart', label: 'MI CHART', icon: icoSnb02 },
+  { id: 'market', label: '앱 마켓 인덱스', icon: icoSnb03 },
+  { id: 'usage', label: '사용량 인덱스', icon: icoSnb04 },
+  { id: 'consumption', label: '소비 인덱스', icon: icoSnb05 },
+  { id: 'report', label: '인사이트 리포트', icon: icoSnb06 },
+  { id: 'cs', label: '고객센터', icon: icoSnb07 },
+  { id: 'product', label: '상품안내', icon: icoSnb08 },
 ]
 
 const HISTORY_ITEMS: {
@@ -92,83 +74,17 @@ function IconMore() {
   )
 }
 
-function IconGnbInsightReport() {
-  return (
-    <svg
-      className={styles.railIconSvg}
-      width="30"
-      height="30"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden
-    >
-      <path
-        d="M6 3h9l3 3v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M14 3v4h4M8 12h8M8 16h5"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-      <path
-        d="M4 6h9l2 2v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-        opacity="0.45"
-      />
-    </svg>
-  )
-}
-
-function RailNavIcon({ navId }: { navId: string }) {
-  if (navId === 'consumption') {
-    return (
-      <img
-        src={consumptionPng}
-        alt=""
-        width={30}
-        height={30}
-        className={styles.railIconImg}
-      />
-    )
-  }
-  if (navId === 'report') {
-    return <IconGnbInsightReport />
-  }
-
-  const src =
-    navId === 'agent'
-      ? GNB_ICON_FROM_FIGMA.agentChart
-      : navId === 'chart'
-        ? GNB_ICON_FROM_FIGMA.miChart
-        : navId === 'market'
-          ? GNB_ICON_FROM_FIGMA.market
-          : navId === 'usage'
-            ? GNB_ICON_FROM_FIGMA.usage
-            : navId === 'cs'
-              ? GNB_ICON_FROM_FIGMA.more
-              : navId === 'product'
-                ? GNB_ICON_FROM_FIGMA.productGuide
-                : null
-
-  if (!src) return null
-
-  return (
-    <img src={src} alt="" width={30} height={30} className={styles.railIconImg} />
-  )
+function RailNavIcon({ src }: { src: string }) {
+  return <img src={src} alt="" width={30} height={30} className={styles.railIconImg} />
 }
 
 export type LayoutProps = {
   children: ReactNode
+  /** SNB 로고·새 대화 클릭 시 첫 진입 화면으로 리셋 */
+  onResetToHome?: () => void
 }
 
-export default function Layout({ children }: LayoutProps) {
+export default function Layout({ children, onResetToHome }: LayoutProps) {
   return (
     <div className={styles.page}>
       <header className={styles.topBar} role="banner">
@@ -223,7 +139,7 @@ export default function Layout({ children }: LayoutProps) {
                   aria-current={active ? 'page' : undefined}
                 >
                   <span className={styles.navIcon}>
-                    <RailNavIcon navId={item.id} />
+                    <RailNavIcon src={item.icon} />
                   </span>
                   <span className={styles.navLabel}>{item.label}</span>
                 </button>
@@ -233,21 +149,26 @@ export default function Layout({ children }: LayoutProps) {
         </nav>
 
         <aside className={styles.chatPanel} aria-label="대화">
-          <h2 className={styles.agentTitle}>
+          <button
+            type="button"
+            className={styles.agentTitleBtn}
+            onClick={onResetToHome}
+            aria-label="MI AI Agent 홈으로 이동"
+          >
             <img
-              src={ASSET_MI_AI_HEADER_LOGO}
+              src={icoSymbol}
               alt=""
               width={30}
               height={30}
               className={styles.agentTitleIcon}
             />
             MI AI Agent
-          </h2>
+          </button>
 
           <div className={styles.chatList}>
-            <button type="button" className={styles.newChat}>
+            <button type="button" className={styles.newChat} onClick={onResetToHome}>
               <span className={styles.newChatIcon}>
-                <img src={ASSET_NEW_CHAT} alt="" width={24} height={24} />
+                <img src={icoNewChat} alt="" width={24} height={24} />
               </span>
               새 대화
             </button>

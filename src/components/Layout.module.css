@@ -305,16 +305,24 @@
   min-height: 0;
 }
 
-.agentTitle {
+.agentTitleBtn {
   margin: 0;
   padding: 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font: inherit;
   font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.02em;
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
   color: var(--white);
+  cursor: pointer;
+  text-align: left;
+  box-sizing: border-box;
 }
 
 .agentTitleIcon {
