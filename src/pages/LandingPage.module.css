@@ -3,12 +3,6 @@
  * 답변 콘텐츠 최대 너비: 860px (`--content-max` 900px과 별도)
  */
 
-:global(:root) {
-  --main-card-pad-x: 20px;
-  --thread-panel-width: 260px;
-  --chat-header-line-outset-x: calc(var(--main-card-pad-x) * 2);
-}
-
 .contentInner {
   --answer-content-max: 860px;
   width: 100%;
@@ -21,7 +15,8 @@
   min-height: 0;
   overflow: hidden;
   box-sizing: border-box;
-  padding: 0;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .mainContent {
@@ -45,6 +40,13 @@
   overflow: visible;
 }
 
+/* 랜딩(비대화) — mainCard 패딩 상쇄 후 히어로/추천질문 좌우 여백 */
+.mainContent:not(.mainContentChat) {
+  padding-left: 20px;
+  padding-right: 20px;
+  box-sizing: border-box;
+}
+
 .chatMainShell {
   flex: 1;
   display: flex;
@@ -54,29 +56,21 @@
   width: 100%;
 }
 
-/* Figma layout (`24360:33659`) — header+chat+composer | thread panel */
-.pageMainRow {
-  flex: 1 1 0;
-  min-height: 0;
-  min-width: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
-  box-sizing: border-box;
-}
-
-.pageMainRowWithPanel {
-  margin-right: calc(-1 * var(--main-card-pad-x));
-}
-
-.pageMainColumn {
+/* Figma layout (`24360:33659`) — Layout.mainColumn(row): chatMainColumn | threadPanel */
+/* mainCard 좌우 20px 패딩 상쇄 — 헤더만 별도 padding, 답변/질문창은 max-width·margin 유지 */
+.chatMainColumn {
   flex: 1 1 0;
   min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   box-sizing: border-box;
+  margin-left: -20px;
+}
+
+.chatMainColumn:only-child {
+  margin-right: -20px;
 }
 
 .chat-scroll-container {
@@ -90,9 +84,8 @@
 
 /* Figma thread sheet (`24360:35151`) */
 .threadPanel {
-  flex: 0 0 var(--thread-panel-width);
-  width: var(--thread-panel-width);
-  align-self: stretch;
+  flex-shrink: 0;
+  width: 260px;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -255,40 +248,15 @@
 /* Figma header (`24348:13368`) */
 .chatHeader {
   flex-shrink: 0;
-  position: relative;
-  z-index: 6;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  margin-left: calc(-1 * var(--main-card-pad-x));
-  margin-right: calc(-1 * var(--main-card-pad-x));
-  padding: 16px var(--main-card-pad-x);
-  border-bottom: none;
+  margin: 0;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--gray-650);
   background: var(--gray-800);
   box-sizing: border-box;
-}
-
-/* 패딩·카드 bleed와 무관하게 헤더 전체 너비 하단 라인 */
-.chatHeader::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: calc(-1 * var(--chat-header-line-outset-x));
-  right: calc(-1 * var(--chat-header-line-outset-x));
-  height: 1px;
-  background: var(--gray-650);
-  pointer-events: none;
-}
-
-/* 패널 열림: 헤더가 패널 열까지 확장 + 우측 260px 여백으로 닫기 버튼 보호 */
-.pageMainRowWithPanel .chatHeader {
-  margin-right: calc(-1 * (var(--main-card-pad-x) + var(--thread-panel-width)));
-  padding-right: calc(var(--main-card-pad-x) + var(--thread-panel-width));
-}
-
-.pageMainRowWithPanel .chatHeader::after {
-  right: calc(-1 * (var(--chat-header-line-outset-x) + var(--thread-panel-width)));
 }
 
 .chatHeaderTitle {
@@ -1966,6 +1934,9 @@
   display: flex;
   justify-content: center;
   width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  box-sizing: border-box;
   background: linear-gradient(to top, var(--gray-800) 75%, transparent);
 }
 

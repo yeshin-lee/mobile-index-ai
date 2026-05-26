@@ -1437,38 +1437,33 @@ export default function LandingPage() {
 
   return (
     <Layout onResetToHome={handleResetToHome}>
-      <div
-        className={`${styles.pageMainRow}${
-          isThreadPanelOpen && hasConversation ? ` ${styles.pageMainRowWithPanel}` : ''
-        }`}
-      >
-        <div className={styles.pageMainColumn}>
-          {showChatHeader ? (
-            <header className={styles.chatHeader}>
-              <h2 className={styles.chatHeaderTitle}>{headerQuestionText}</h2>
-              <button
-                type="button"
-                className={styles.chatFlowBtn}
-                aria-expanded={isThreadPanelOpen}
-                aria-label={
-                  isThreadPanelOpen ? '질문 흐름 닫기' : '질문 흐름 보기'
-                }
-                onClick={() => setIsThreadPanelOpen((open) => !open)}
-              >
-                <span className={styles.chatFlowBtnText}>
-                  {isThreadPanelOpen ? '질문 흐름 닫기' : '질문 흐름 보기'}
-                </span>
-                <img
-                  src={isThreadPanelOpen ? icoClose : icoOpen}
-                  alt=""
-                  width={20}
-                  height={20}
-                  className={styles.chatFlowBtnIcon}
-                />
-              </button>
-            </header>
-          ) : null}
-          <div className={styles.contentInner}>
+      <div className={styles.chatMainColumn}>
+              {showChatHeader ? (
+                <header className={styles.chatHeader}>
+                  <h2 className={styles.chatHeaderTitle}>{headerQuestionText}</h2>
+                  <button
+                    type="button"
+                    className={styles.chatFlowBtn}
+                    aria-expanded={isThreadPanelOpen}
+                    aria-label={
+                      isThreadPanelOpen ? '질문 흐름 닫기' : '질문 흐름 보기'
+                    }
+                    onClick={() => setIsThreadPanelOpen((open) => !open)}
+                  >
+                    <span className={styles.chatFlowBtnText}>
+                      {isThreadPanelOpen ? '질문 흐름 닫기' : '질문 흐름 보기'}
+                    </span>
+                    <img
+                      src={isThreadPanelOpen ? icoClose : icoOpen}
+                      alt=""
+                      width={20}
+                      height={20}
+                      className={styles.chatFlowBtnIcon}
+                    />
+                  </button>
+                </header>
+              ) : null}
+              <div className={styles.contentInner}>
             {hasConversation ? (
               <div className={styles['chat-scroll-container']}>
                 <div
@@ -1932,6 +1927,7 @@ export default function LandingPage() {
               </div>
               </div>
             )}
+      </div>
             <div className={styles.composerWrap}>
               {toastMessage ? (
             <div
@@ -2144,15 +2140,13 @@ export default function LandingPage() {
             </div>
           </div>
             </div>
-          </div>
-        </div>
-        {hasConversation && isThreadPanelOpen ? (
-          <QuestionFlowPanel
-            groups={threadPanelGroups}
-            onSelectQuestion={scrollToQuestion}
-          />
-        ) : null}
       </div>
+      {hasConversation && isThreadPanelOpen ? (
+        <QuestionFlowPanel
+          groups={threadPanelGroups}
+          onSelectQuestion={scrollToQuestion}
+        />
+      ) : null}
       {feedbackModalLineId ? (
         <div
           className={styles.feedbackOverlay}
