@@ -179,11 +179,34 @@
   justify-content: center;
 }
 
-.questionStarImg {
+.questionStarImgBorder,
+.questionStarImgFilled {
   display: block;
-  width: 17px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   object-fit: contain;
+}
+
+.questionStarImgBorder {
+  opacity: 1;
+  transition: opacity 0.15s ease;
+}
+
+.questionStarImgFilled {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.questionStarBtn:hover .questionStarImgBorder,
+.questionStarBtn[aria-pressed='true'] .questionStarImgBorder {
+  opacity: 0;
+}
+
+.questionStarBtn:hover .questionStarImgFilled,
+.questionStarBtn[aria-pressed='true'] .questionStarImgFilled {
+  opacity: 1;
 }
 
 /* Figma `00_loading_01default` / `00_loading_02` — 카드 테두리 없음 */
@@ -454,12 +477,19 @@
   outline-offset: 2px;
 }
 
+.answerFeedbackBtn,
+.feedbackPanel {
+  box-sizing: border-box;
+  height: 36px;
+  flex-shrink: 0;
+}
+
 .answerFeedbackBtn {
   display: inline-flex;
   flex-direction: row;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 0 12px;
   border-radius: 8px;
   border: none;
   background: transparent;
@@ -467,6 +497,7 @@
   font: inherit;
   font-size: 14px;
   font-weight: 500;
+  line-height: 1.4;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -483,6 +514,298 @@
 .answerFeedbackIcon {
   display: block;
   flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.feedbackPanel {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 0 12px;
+  border-radius: 8px;
+  background: transparent;
+}
+
+.feedbackPanelText {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--gray-50);
+  white-space: nowrap;
+}
+
+.feedbackIconBtn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.feedbackIconBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.feedbackIconBtn:focus-visible {
+  outline: 2px solid var(--primary-300);
+  outline-offset: 2px;
+}
+
+.feedbackIconBtn:disabled {
+  cursor: default;
+}
+
+.feedbackIconImg {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
+.feedbackIconBtnActive .feedbackIconImg {
+  filter: brightness(0) invert(1);
+}
+
+/* Figma toast (`24359:29170`) — composerWrap 상단 20px, 가로 중앙 */
+.feedbackToast {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: var(--gray-50);
+  box-shadow: 0 8px 6px rgba(0, 0, 0, 0.16);
+  transform: translateX(-50%);
+  pointer-events: none;
+  max-width: min(480px, calc(100vw - 48px));
+  box-sizing: border-box;
+}
+
+.feedbackToastIcon {
+  flex-shrink: 0;
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
+.feedbackToastText {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--gray-900);
+  white-space: nowrap;
+}
+
+/* Figma 피드백 모달 (`24359:29183`, 제출 `24359:30058`) */
+.feedbackOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.feedbackModal {
+  width: 440px;
+  max-width: 100%;
+  max-height: min(560px, calc(100vh - 48px));
+  overflow: auto;
+  padding: 24px;
+  border-radius: 10px;
+  background: var(--gray-750);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-sizing: border-box;
+}
+
+.feedbackModalHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.feedbackModalTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--white);
+}
+
+.feedbackModalDivider {
+  width: 100%;
+  height: 1px;
+  background: var(--gray-650);
+  flex-shrink: 0;
+}
+
+.feedbackReasonList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.feedbackReasonItem {
+  min-height: 26px;
+}
+
+.feedbackCheckLabel {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  min-height: 26px;
+  cursor: pointer;
+}
+
+.feedbackCheckInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.feedbackCheckBox {
+  position: relative;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  box-sizing: border-box;
+  border: 1px solid var(--gray-600);
+  border-radius: 4px;
+  background: transparent;
+}
+
+.feedbackCheckBoxChecked {
+  border-color: var(--primary-300);
+  background: var(--primary-300);
+}
+
+.feedbackCheckBoxIcon {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: block;
+}
+
+.feedbackCheckText {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 26px;
+  color: #c9c9cf;
+  white-space: nowrap;
+}
+
+.feedbackCheckTextChecked {
+  color: var(--white);
+}
+
+.feedbackTextarea {
+  width: 100%;
+  height: 100px;
+  min-height: 100px;
+  padding: 11px 15px;
+  border: 1px solid var(--gray-600);
+  border-radius: 6px;
+  background: var(--gray-700);
+  color: var(--white);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.feedbackTextarea::placeholder {
+  color: var(--gray-400);
+}
+
+.feedbackTextarea:focus {
+  border-color: var(--gray-500);
+}
+
+.feedbackFooter {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 100%;
+}
+
+.feedbackCancelBtn,
+.feedbackSubmitBtn {
+  padding: 6px 20px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+  cursor: pointer;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.feedbackCancelBtn {
+  border: 1px solid var(--gray-600);
+  background: transparent;
+  color: var(--white);
+}
+
+.feedbackCancelBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.feedbackSubmitBtn {
+  border: none;
+  background: #9d6af0;
+  color: var(--white);
+}
+
+.feedbackSubmitBtn:hover:not(:disabled) {
+  background: var(--primary-300);
+}
+
+.feedbackSubmitBtn:disabled {
+  background: var(--gray-650);
+  color: var(--gray-400);
+  cursor: not-allowed;
+}
+
+.feedbackCancelBtn:focus-visible,
+.feedbackSubmitBtn:focus-visible {
+  outline: 2px solid var(--primary-300);
+  outline-offset: 2px;
 }
 
 .answerPlaceholder {
@@ -1394,6 +1717,7 @@
 }
 
 .composerWrap {
+  position: relative;
   flex-shrink: 0;
   padding: 16px 0 28px;
   display: flex;

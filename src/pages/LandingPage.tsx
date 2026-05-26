@@ -1,6 +1,7 @@
 import {
   type KeyboardEvent,
   type ReactNode,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -15,12 +16,16 @@ import Layout from '../components/Layout'
 import { TooltipWrap } from '../components/TooltipWrap'
 import imgAppicon from '../assets/img_appicon.png'
 import icoBookmark from '../assets/ico_boomark.svg'
+import icoBookmarkBorder from '../assets/ico_bookmark_border.svg'
+import icoBookmarkFilled from '../assets/ico_bookmark_filled.svg'
 import icoCheck from '../assets/ico_check.svg'
 import icoCopy from '../assets/ico_copy.svg'
 import icoDownload from '../assets/ico_download.svg'
 import icoExcel from '../assets/ico_excel.svg'
 import icoExpand from '../assets/ico_expand.svg'
 import icoFeedback from '../assets/ico_feedback.svg'
+import icoHate from '../assets/ico_hate.svg'
+import icoLike from '../assets/ico_like.svg'
 import icoPause from '../assets/ico_pause.svg'
 import icoReplay from '../assets/ico_replay.svg'
 import icoSend from '../assets/ico_send.svg'
@@ -28,12 +33,6 @@ import icoShare2 from '../assets/ico_share2.svg'
 import icoSymbol from '../assets/ico_symbol.svg'
 import styles from './LandingPage.module.css'
 
-/** Figma 말풍선 별 비활성 (`24348:13423` / star_border) — 채팅 헤더 토글용 잔존 */
-const ASSET_CHAT_STAR_BORDER =
-  'https://www.figma.com/api/mcp/asset/12829668-26c2-483b-b146-1e12a124ae2e'
-/** Figma 즐겨찾기 별 활성 (`24345:11875` / star) — 채팅 헤더 토글용 잔존 */
-const ASSET_CHAT_STAR_FILLED =
-  'https://www.figma.com/api/mcp/asset/daa38519-f4e8-4647-9374-ad535fb15705'
 const TABS = ['현황 파악', '변화 추적', '원인 탐색', '향후 예측'] as const
 
 const ANSWER_OPTIONS = [
@@ -41,6 +40,14 @@ const ANSWER_OPTIONS = [
   { mode: '심화 답변' as const, description: '데이터 분석 + 비즈니스 인사이트 포함' },
 ] as const
 type AnswerMode = (typeof ANSWER_OPTIONS)[number]['mode']
+
+/** Figma 피드백 모달 (`24359:29183`) 사유 목록 */
+const FEEDBACK_REASONS = [
+  '데이터가 정확하지 않아요',
+  '원하는 답변이 아니에요',
+  '답변이 너무 부족해요',
+  '기타',
+] as const
 
 /** Figma `dropdown` (`24345:11707`) 샘플 목록 */
 const INITIAL_FAVORITE_QUESTIONS = [
@@ -871,6 +878,60 @@ export default function LandingPage() {
   const streamAbortRef = useRef<AbortController | null>(null)
   const threadRef = useRef<ChatLine[]>([])
 
+  /** 답변 피드백 — line.id 기준 */
+  type FeedbackPhase = 'choosing' | 'liked' | 'disliked'
+  const [feedbackByLine, setFeedbackByLine] = useState<Record<string, FeedbackPhase>>({})
+  const [feedbackModalLineId, setFeedbackModalLineId] = useState<string | null>(null)
+  const [feedbackReasons, setFeedbackReasons] = useState<Record<string, boolean>>({})
+  const [feedbackComment, setFeedbackComment] = useState('')
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const toastTimerRef = useRef<number | null>(null)
+
+  const showFeedbackToast = useCallback((msg: string) => {
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
+    setToastMessage(msg)
+    toastTimerRef.current = window.setTimeout(() => {
+      setToastMessage(null)
+      toastTimerRef.current = null
+    }, 3200)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
+    }
+  }, [])
+
+  const openFeedbackChoice = useCallback((lineId: string) => {
+    setFeedbackByLine((prev) => ({ ...prev, [lineId]: 'choosing' }))
+  }, [])
+
+  const handleLikeFeedback = useCallback(
+    (lineId: string) => {
+      setFeedbackByLine((prev) => ({ ...prev, [lineId]: 'liked' }))
+      showFeedbackToast('피드백 감사합니다. 소중한 의견이 반영되었습니다.')
+    },
+    [showFeedbackToast],
+  )
+
+  const handleDislikeFeedback = useCallback((lineId: string) => {
+    setFeedbackReasons({})
+    setFeedbackComment('')
+    setFeedbackModalLineId(lineId)
+  }, [])
+
+  const closeFeedbackModal = useCallback(() => {
+    setFeedbackModalLineId(null)
+  }, [])
+
+  const submitFeedbackModal = useCallback(() => {
+    if (!feedbackModalLineId) return
+    if (!Object.values(feedbackReasons).some(Boolean)) return
+    setFeedbackByLine((prev) => ({ ...prev, [feedbackModalLineId]: 'disliked' }))
+    setFeedbackModalLineId(null)
+    showFeedbackToast('소중한 의견 감사합니다. 더 나은 답변을 위해 반영하겠습니다.')
+  }, [feedbackModalLineId, feedbackReasons, showFeedbackToast])
+
   const hasConversation = thread.length > 0
   const sendDisabled = message.trim().length === 0 || isSending
   const showChatHeader = hasConversation
@@ -901,6 +962,15 @@ export default function LandingPage() {
     setOpenMenu(null)
     setThread([])
     setMessage('')
+    setFeedbackByLine({})
+    setFeedbackModalLineId(null)
+    setFeedbackReasons({})
+    setFeedbackComment('')
+    setToastMessage(null)
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current)
+      toastTimerRef.current = null
+    }
   }
 
   function applyQuestionToComposer(text: string) {
@@ -1227,30 +1297,42 @@ export default function LandingPage() {
                       className={styles.questionBubbleWrap}
                     >
                       <div className={styles.questionBubbleRow}>
-                        <button
-                          type="button"
-                          className={styles.questionStarBtn}
-                          aria-label={
-                            starred ? '즐겨찾기 해제' : '이 질문을 즐겨찾기에 추가'
+                        <TooltipWrap
+                          label={
+                            starred
+                              ? '즐겨찾는 질문 해제'
+                              : '즐겨찾는 질문에 추가'
                           }
-                          aria-pressed={starred}
-                          title={
-                            starred ? '즐겨찾기 해제' : '이 질문을 즐겨찾기에 추가'
-                          }
-                          onClick={() => toggleFavoriteForQuestion(line.content)}
                         >
-                          <span className={styles.questionStarInner}>
-                            <img
-                              src={
-                                starred ? ASSET_CHAT_STAR_FILLED : ASSET_CHAT_STAR_BORDER
-                              }
-                              alt=""
-                              width={17}
-                              height={16}
-                              className={styles.questionStarImg}
-                            />
-                          </span>
-                        </button>
+                          <button
+                            type="button"
+                            className={styles.questionStarBtn}
+                            aria-label={
+                              starred
+                                ? '즐겨찾는 질문 해제'
+                                : '즐겨찾는 질문에 추가'
+                            }
+                            aria-pressed={starred}
+                            onClick={() => toggleFavoriteForQuestion(line.content)}
+                          >
+                            <span className={styles.questionStarInner}>
+                              <img
+                                src={icoBookmarkBorder}
+                                alt=""
+                                width={20}
+                                height={20}
+                                className={styles.questionStarImgBorder}
+                              />
+                              <img
+                                src={icoBookmarkFilled}
+                                alt=""
+                                width={20}
+                                height={20}
+                                className={styles.questionStarImgFilled}
+                              />
+                            </span>
+                          </button>
+                        </TooltipWrap>
                         <div className={styles.questionBubble}>
                           <p className={styles.questionText}>{line.content}</p>
                         </div>
@@ -1498,20 +1580,79 @@ export default function LandingPage() {
                               />
                             ) : null}
                           </div>
-                          <button
-                            type="button"
-                            className={styles.answerFeedbackBtn}
-                            onClick={() => console.log('답변 피드백하기')}
-                          >
-                            <img
-                              src={icoFeedback}
-                              alt=""
-                              width={20}
-                              height={20}
-                              className={styles.answerFeedbackIcon}
-                            />
-                            답변 피드백하기
-                          </button>
+                          {feedbackByLine[line.id] ? (
+                            (() => {
+                              const phase = feedbackByLine[line.id]
+                              const liked = phase === 'liked'
+                              const disliked = phase === 'disliked'
+                              return (
+                                <div
+                                  className={styles.feedbackPanel}
+                                  role="group"
+                                  aria-label="답변 피드백"
+                                >
+                                  <span className={styles.feedbackPanelText}>
+                                    이 답변이 도움이 되었나요?
+                                  </span>
+                                  <TooltipWrap label="도움이 됐어요">
+                                    <button
+                                      type="button"
+                                      className={`${styles.feedbackIconBtn}${
+                                        liked ? ` ${styles.feedbackIconBtnActive}` : ''
+                                      }`}
+                                      disabled={liked}
+                                      aria-pressed={liked}
+                                      aria-label="도움이 됐어요"
+                                      onClick={() => handleLikeFeedback(line.id)}
+                                    >
+                                      <img
+                                        src={icoLike}
+                                        alt=""
+                                        width={20}
+                                        height={20}
+                                        className={styles.feedbackIconImg}
+                                      />
+                                    </button>
+                                  </TooltipWrap>
+                                  <TooltipWrap label="아쉬워요">
+                                    <button
+                                      type="button"
+                                      className={`${styles.feedbackIconBtn}${
+                                        disliked ? ` ${styles.feedbackIconBtnActive}` : ''
+                                      }`}
+                                      disabled={disliked}
+                                      aria-pressed={disliked}
+                                      aria-label="아쉬워요"
+                                      onClick={() => handleDislikeFeedback(line.id)}
+                                    >
+                                      <img
+                                        src={icoHate}
+                                        alt=""
+                                        width={20}
+                                        height={20}
+                                        className={styles.feedbackIconImg}
+                                      />
+                                    </button>
+                                  </TooltipWrap>
+                                </div>
+                              )
+                            })()
+                          ) : (
+                            <button
+                              type="button"
+                              className={styles.answerFeedbackBtn}
+                              onClick={() => openFeedbackChoice(line.id)}
+                            >
+                              <img
+                                src={icoFeedback}
+                                alt=""
+                                width={20}
+                                height={20}
+                                className={styles.answerFeedbackIcon}
+                              />
+                              답변 피드백하기
+                            </button>
+                          )}
                         </div>
                       ) : null}
                       {(() => {
@@ -1604,6 +1745,22 @@ export default function LandingPage() {
           </div>
         )}
         <div className={styles.composerWrap}>
+          {toastMessage ? (
+            <div
+              className={styles.feedbackToast}
+              role="status"
+              aria-live="polite"
+            >
+              <img
+                src={icoCheck}
+                alt=""
+                width={20}
+                height={20}
+                className={styles.feedbackToastIcon}
+              />
+              <span className={styles.feedbackToastText}>{toastMessage}</span>
+            </div>
+          ) : null}
           <div
             ref={composerRef}
             className={
@@ -1800,6 +1957,107 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+      {feedbackModalLineId ? (
+        <div
+          className={styles.feedbackOverlay}
+          role="presentation"
+          onClick={closeFeedbackModal}
+        >
+          <div
+            className={styles.feedbackModal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="feedback-modal-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.feedbackModalHeader}>
+              <h3 id="feedback-modal-title" className={styles.feedbackModalTitle}>
+                어떤 점이 아쉬우셨나요?
+              </h3>
+              <div className={styles.feedbackModalDivider} aria-hidden />
+            </div>
+            <ul className={styles.feedbackReasonList}>
+              {FEEDBACK_REASONS.map((reason) => {
+                const checked = Boolean(feedbackReasons[reason])
+                return (
+                  <li key={reason} className={styles.feedbackReasonItem}>
+                    <label className={styles.feedbackCheckLabel}>
+                      <input
+                        type="checkbox"
+                        className={styles.feedbackCheckInput}
+                        checked={checked}
+                        onChange={(e) => {
+                          const next = e.target.checked
+                          setFeedbackReasons((prev) => ({
+                            ...prev,
+                            [reason]: next,
+                          }))
+                        }}
+                      />
+                      <span
+                        className={`${styles.feedbackCheckBox}${
+                          checked ? ` ${styles.feedbackCheckBoxChecked}` : ''
+                        }`}
+                        aria-hidden
+                      >
+                        {checked ? (
+                          <svg
+                            className={styles.feedbackCheckBoxIcon}
+                            width="12"
+                            height="9"
+                            viewBox="0 0 12 9"
+                            aria-hidden
+                          >
+                            <path
+                              d="M1 4.5L4.5 8L11 1.5"
+                              stroke="white"
+                              strokeWidth="1.6"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              fill="none"
+                            />
+                          </svg>
+                        ) : null}
+                      </span>
+                      <span
+                        className={`${styles.feedbackCheckText}${
+                          checked ? ` ${styles.feedbackCheckTextChecked}` : ''
+                        }`}
+                      >
+                        {reason}
+                      </span>
+                    </label>
+                  </li>
+                )
+              })}
+            </ul>
+            <textarea
+              className={styles.feedbackTextarea}
+              placeholder="추가로 의견을 남겨주세요. (선택)"
+              value={feedbackComment}
+              onChange={(e) => setFeedbackComment(e.target.value)}
+              rows={4}
+            />
+            <div className={styles.feedbackFooter}>
+              <button
+                type="button"
+                className={styles.feedbackCancelBtn}
+                onClick={closeFeedbackModal}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                className={styles.feedbackSubmitBtn}
+                disabled={!Object.values(feedbackReasons).some(Boolean)}
+                onClick={submitFeedbackModal}
+              >
+                제출
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </Layout>
   )
 }
