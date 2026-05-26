@@ -26,6 +26,8 @@ import icoExpand from '../assets/ico_expand.svg'
 import icoFeedback from '../assets/ico_feedback.svg'
 import icoHate from '../assets/ico_hate.svg'
 import icoLike from '../assets/ico_like.svg'
+import icoClose from '../assets/ico_close.svg'
+import icoOpen from '../assets/ico_open.svg'
 import icoPause from '../assets/ico_pause.svg'
 import icoReplay from '../assets/ico_replay.svg'
 import icoSend from '../assets/ico_send.svg'
@@ -169,6 +171,146 @@ const FOLLOWUP_TRANSITION_MS = 360
 const ICON_PATH_ADD = 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z'
 const ICON_PATH_REMOVE = 'M19 13H5v-2h14v2z'
 
+function ThreadBranch({ isLast }: { isLast: boolean }) {
+  return (
+    <span
+      className={`${styles.threadBranch}${isLast ? ` ${styles.threadBranchLast}` : ''}`}
+      aria-hidden
+    />
+  )
+}
+
+type ThreadPanelBranch = {
+  id: string
+  content: string
+  children: { id: string; content: string }[]
+}
+
+type ThreadPanelGroup = {
+  root: { id: string; content: string }
+  branches: ThreadPanelBranch[]
+}
+
+function buildThreadPanelGroups(thread: ChatLine[]): ThreadPanelGroup[] {
+  const groups: ThreadPanelGroup[] = []
+  let current: ThreadPanelGroup | null = null
+  let currentBranch: ThreadPanelBranch | null = null
+
+  for (const line of thread) {
+    if (line.role !== 'user') continue
+    const depth = line.questionDepth ?? 1
+
+    if (depth === 1) {
+      current = { root: { id: line.id, content: line.content }, branches: [] }
+      groups.push(current)
+      currentBranch = null
+      continue
+    }
+
+    if (!current) {
+      current = { root: { id: line.id, content: line.content }, branches: [] }
+      groups.push(current)
+      currentBranch = null
+      continue
+    }
+
+    if (depth === 2) {
+      const branch: ThreadPanelBranch = {
+        id: line.id,
+        content: line.content,
+        children: [],
+      }
+      current.branches.push(branch)
+      currentBranch = branch
+      continue
+    }
+
+    if (depth === 3) {
+      if (currentBranch) {
+        currentBranch.children.push({ id: line.id, content: line.content })
+      } else {
+        const branch: ThreadPanelBranch = {
+          id: line.id,
+          content: line.content,
+          children: [],
+        }
+        current.branches.push(branch)
+        currentBranch = branch
+      }
+    }
+  }
+
+  return groups
+}
+
+function QuestionFlowPanel({
+  groups,
+  onSelectQuestion,
+}: {
+  groups: ThreadPanelGroup[]
+  onSelectQuestion: (lineId: string) => void
+}) {
+  return (
+    <aside className={styles.threadPanel} aria-label="질문 흐름">
+      <div className={styles.threadPanelHeader}>
+        <h3 className={styles.threadPanelTitle}>질문 흐름</h3>
+        <p className={styles.threadPanelDesc}>질문 간 전체 맥락을 파악하세요.</p>
+      </div>
+      <div className={styles.threadPanelList}>
+        {groups.map((group, groupIdx) => (
+          <div key={group.root.id}>
+            {groupIdx > 0 ? <div className={styles.threadPanelDivider} aria-hidden /> : null}
+            <div className={styles.threadPanelGroup}>
+              <button
+                type="button"
+                className={`${styles.threadDepthRow} ${styles.threadDepthRowDepth1}`}
+                onClick={() => onSelectQuestion(group.root.id)}
+              >
+                <span className={styles.threadDepthBullet} aria-hidden />
+                <span className={styles.threadDepthText}>{group.root.content}</span>
+              </button>
+              {group.branches.map((branch, branchIdx) => {
+                const isLastBranch = branchIdx === group.branches.length - 1
+                const hasChildren = branch.children.length > 0
+                return (
+                  <div key={branch.id} className={styles.threadBranchGroup}>
+                    <button
+                      type="button"
+                      className={`${styles.threadDepthRow} ${styles.threadDepthRowDepth2}`}
+                      onClick={() => onSelectQuestion(branch.id)}
+                    >
+                      <ThreadBranch isLast={isLastBranch && !hasChildren} />
+                      <span className={styles.threadDepthText}>{branch.content}</span>
+                    </button>
+                    {hasChildren ? (
+                      <div className={styles.threadDepth3Group}>
+                        {branch.children.map((child, childIdx) => {
+                          const isLastChild = childIdx === branch.children.length - 1
+                          return (
+                            <button
+                              key={child.id}
+                              type="button"
+                              className={`${styles.threadDepthRow} ${styles.threadDepthRowDepth3}`}
+                              onClick={() => onSelectQuestion(child.id)}
+                            >
+                              <ThreadBranch isLast={isLastChild} />
+                              <span className={styles.threadDepthText}>{child.content}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </aside>
+  )
+}
+
 function FollowupMap({
   context,
   rootQuestion,
@@ -176,7 +318,7 @@ function FollowupMap({
 }: {
   context: FollowupContext
   rootQuestion: string
-  onSelect: (text: string) => void
+  onSelect: (text: string, depth: 2 | 3) => void
 }) {
   const { suggestions } = FOLLOWUP_CONTENT[context]
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null)
@@ -348,7 +490,7 @@ function FollowupMap({
                       ref={(el) => {
                         itemRefs.current[idx] = el
                       }}
-                      onClick={() => onSelect(s.label)}
+                      onClick={() => onSelect(s.label, 2)}
                     >
                       <span className={styles.followupChipText}>{s.label}</span>
                     </button>
@@ -396,7 +538,7 @@ function FollowupMap({
                       ref={(el) => {
                         expansionRefs.current[idx] = el
                       }}
-                      onClick={() => onSelect(q)}
+                      onClick={() => onSelect(q, 3)}
                     >
                       <span className={styles.followupChipText}>{q}</span>
                     </button>
@@ -444,8 +586,10 @@ type ReplyKind = 'chart' | 'text' | 'unavailable'
 
 type ChartAnswerDepth = 'basic' | 'deep'
 
+type QuestionDepth = 1 | 2 | 3
+
 type ChatLine =
-  | { id: string; role: 'user'; content: string }
+  | { id: string; role: 'user'; content: string; questionDepth: QuestionDepth }
   | {
       id: string
       role: 'assistant'
@@ -873,6 +1017,7 @@ export default function LandingPage() {
   const [favoriteQuestions, setFavoriteQuestions] = useState<string[]>(() => [
     ...INITIAL_FAVORITE_QUESTIONS,
   ])
+  const [isThreadPanelOpen, setIsThreadPanelOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const composerRef = useRef<HTMLDivElement>(null)
   const streamAbortRef = useRef<AbortController | null>(null)
@@ -950,6 +1095,20 @@ export default function LandingPage() {
     return m
   }, [thread])
 
+  const threadPanelGroups = useMemo(() => buildThreadPanelGroups(thread), [thread])
+
+  const scrollToQuestion = useCallback(
+    (lineId: string) => {
+      const qIndex = userQuestionIndexByLineId.get(lineId)
+      if (qIndex === undefined) return
+      document.getElementById(`question-${qIndex}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      })
+    },
+    [userQuestionIndexByLineId],
+  )
+
   function newId() {
     return crypto.randomUUID()
   }
@@ -962,6 +1121,7 @@ export default function LandingPage() {
     setOpenMenu(null)
     setThread([])
     setMessage('')
+    setIsThreadPanelOpen(false)
     setFeedbackByLine({})
     setFeedbackModalLineId(null)
     setFeedbackReasons({})
@@ -1139,15 +1299,24 @@ export default function LandingPage() {
     }
   }
 
-  async function handleSendQuestion(override?: string) {
+  async function handleSendQuestion(
+    override?: string,
+    options?: { questionDepth?: QuestionDepth },
+  ) {
     const question = (override ?? message).trim()
     if (!question || isSending) return
 
     setOpenMenu(null)
     setMessage('')
 
+    const questionDepth = options?.questionDepth ?? 1
     const payload = buildStreamPayload(question, answerMode)
-    const userLine: ChatLine = { id: newId(), role: 'user', content: question }
+    const userLine: ChatLine = {
+      id: newId(),
+      role: 'user',
+      content: question,
+      questionDepth,
+    }
     const asstLine: ChatLine = {
       id: newId(),
       role: 'assistant',
@@ -1268,24 +1437,43 @@ export default function LandingPage() {
 
   return (
     <Layout onResetToHome={handleResetToHome}>
-      {showChatHeader ? (
-        <header className={styles.chatHeader}>
-          <h2 className={styles.chatHeaderTitle}>{headerQuestionText}</h2>
-          <button
-            type="button"
-            className={styles.chatFlowBtn}
-            onClick={() => console.log('질문 흐름 보기 클릭')}
-          >
-            질문 흐름 보기 |←
-          </button>
-        </header>
-      ) : null}
-      <div className={styles.contentInner}>
-        {hasConversation ? (
-          <div className={styles['chat-scroll-container']}>
-            <div
-              className={`${styles.mainContent} ${styles.mainContentChat} ${styles.chatStage}`}
-            >
+      <div
+        className={`${styles.pageMainRow}${
+          isThreadPanelOpen && hasConversation ? ` ${styles.pageMainRowWithPanel}` : ''
+        }`}
+      >
+        <div className={styles.pageMainColumn}>
+          {showChatHeader ? (
+            <header className={styles.chatHeader}>
+              <h2 className={styles.chatHeaderTitle}>{headerQuestionText}</h2>
+              <button
+                type="button"
+                className={styles.chatFlowBtn}
+                aria-expanded={isThreadPanelOpen}
+                aria-label={
+                  isThreadPanelOpen ? '질문 흐름 닫기' : '질문 흐름 보기'
+                }
+                onClick={() => setIsThreadPanelOpen((open) => !open)}
+              >
+                <span className={styles.chatFlowBtnText}>
+                  {isThreadPanelOpen ? '질문 흐름 닫기' : '질문 흐름 보기'}
+                </span>
+                <img
+                  src={isThreadPanelOpen ? icoClose : icoOpen}
+                  alt=""
+                  width={20}
+                  height={20}
+                  className={styles.chatFlowBtnIcon}
+                />
+              </button>
+            </header>
+          ) : null}
+          <div className={styles.contentInner}>
+            {hasConversation ? (
+              <div className={styles['chat-scroll-container']}>
+                <div
+                  className={`${styles.mainContent} ${styles.mainContentChat} ${styles.chatStage}`}
+                >
               {thread.map((line, index) => {
                 if (line.role === 'user') {
                   const starred = favoriteQuestions.includes(line.content)
@@ -1671,9 +1859,9 @@ export default function LandingPage() {
                           <FollowupMap
                             context={assistantLine.replyKind}
                             rootQuestion={previousUserQuestion}
-                            onSelect={(text) => {
+                            onSelect={(text, depth) => {
                               setMessage(text)
-                              void handleSendQuestion(text)
+                              void handleSendQuestion(text, { questionDepth: depth })
                             }}
                           />
                         )
@@ -1682,11 +1870,11 @@ export default function LandingPage() {
                   </article>
                 )
               })}
-              <div className={styles.chatScrollAnchor} aria-hidden />
-            </div>
-          </div>
-        ) : (
-          <div className={styles.mainContent}>
+                <div className={styles.chatScrollAnchor} aria-hidden />
+                </div>
+              </div>
+            ) : (
+              <div className={styles.mainContent}>
               <div className={styles.heroSection}>
                 <div className={styles.hero}>
                   <h1 className={styles.heroTitle}>
@@ -1742,10 +1930,10 @@ export default function LandingPage() {
                   ))}
                 </div>
               </div>
-          </div>
-        )}
-        <div className={styles.composerWrap}>
-          {toastMessage ? (
+              </div>
+            )}
+            <div className={styles.composerWrap}>
+              {toastMessage ? (
             <div
               className={styles.feedbackToast}
               role="status"
@@ -1955,7 +2143,15 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
+            </div>
+          </div>
         </div>
+        {hasConversation && isThreadPanelOpen ? (
+          <QuestionFlowPanel
+            groups={threadPanelGroups}
+            onSelectQuestion={scrollToQuestion}
+          />
+        ) : null}
       </div>
       {feedbackModalLineId ? (
         <div
