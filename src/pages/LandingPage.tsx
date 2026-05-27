@@ -335,7 +335,11 @@ function QuestionFlowPanel({
       <div className={styles.threadPanelList}>
         {groups.map((group, groupIdx) => (
           <div key={group.root.id}>
-            {groupIdx > 0 ? <div className={styles.threadPanelDivider} aria-hidden /> : null}
+            {groupIdx > 0 ? (
+              <div className={styles.threadPanelDividerWrap}>
+                <div className={styles.threadPanelDivider} aria-hidden />
+              </div>
+            ) : null}
             <div className={styles.threadPanelGroup}>
               <ThreadDepthRowButton
                 depth={1}

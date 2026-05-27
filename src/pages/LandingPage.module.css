@@ -3,6 +3,7 @@
  * 답변 콘텐츠 최대 너비: 860px (`--content-max` 900px과 별도)
  */
 
+/* 채팅/랜딩 공통 — max-width·flex 레이아웃만 (박스 장식 없음) */
 .contentInner {
   --answer-content-max: 860px;
   width: 100%;
@@ -15,8 +16,11 @@
   min-height: 0;
   overflow: hidden;
   box-sizing: border-box;
-  padding-left: 0;
-  padding-right: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .mainContent {
@@ -38,6 +42,11 @@
   justify-content: flex-start;
   gap: 24px;
   overflow: visible;
+  padding: 24px 0 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .chatMainShell {
@@ -80,6 +89,11 @@
   overflow-y: auto;
   overflow-x: hidden;
   box-sizing: border-box;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 /* Figma thread sheet (`24360:35151`) */
@@ -138,8 +152,14 @@
   padding: 0 0 8px;
 }
 
+.threadPanelDividerWrap {
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+
 .threadPanelDivider {
   flex-shrink: 0;
+  width: 100%;
   margin: 0;
   padding: 0 0 8px;
   height: 0;
@@ -242,10 +262,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  margin: 0;
-  padding: 16px 0;
+  margin: 0 -20px;
+  padding: 16px 20px;
   border-bottom: 1px solid var(--gray-650);
-  background: var(--gray-800);
+  background: transparent;
   box-sizing: border-box;
 }
 
