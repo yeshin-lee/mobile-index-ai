@@ -26,6 +26,8 @@ import icoExpand from '../assets/ico_expand.svg'
 import icoFeedback from '../assets/ico_feedback.svg'
 import icoHate from '../assets/ico_hate.svg'
 import icoLike from '../assets/ico_like.svg'
+import icoBranchLast from '../assets/ico_branch_last.svg'
+import icoBranchMiddle from '../assets/ico_branch_middle.svg'
 import icoClose from '../assets/ico_close.svg'
 import icoOpen from '../assets/ico_open.svg'
 import icoPause from '../assets/ico_pause.svg'
@@ -171,12 +173,72 @@ const FOLLOWUP_TRANSITION_MS = 360
 const ICON_PATH_ADD = 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z'
 const ICON_PATH_REMOVE = 'M19 13H5v-2h14v2z'
 
-function ThreadBranch({ isLast }: { isLast: boolean }) {
+/**
+ * 2뎁스 브랜치 아이콘:
+ * - 바로 아래 3뎁스가 있으면 → last
+ * - 3뎁스 없고 형제 2개 이상이면 → 마지막 형제만 last, 나머지 middle
+ * - 단일 2뎁스 → last
+ */
+function isDepth2BranchIconLast(
+  branchIdx: number,
+  branchCount: number,
+  hasDepth3Children: boolean,
+): boolean {
+  if (hasDepth3Children) {
+    return true
+  }
+  if (branchCount > 1) {
+    return branchIdx === branchCount - 1
+  }
+  return true
+}
+
+function ThreadBranchIcon({ isLast }: { isLast: boolean }) {
   return (
-    <span
-      className={`${styles.threadBranch}${isLast ? ` ${styles.threadBranchLast}` : ''}`}
+    <img
+      src={isLast ? icoBranchLast : icoBranchMiddle}
+      alt=""
+      width={24}
+      height={28}
+      className={styles.threadBranchIcon}
       aria-hidden
     />
+  )
+}
+
+function ThreadDepthRowButton({
+  content,
+  depth,
+  isLastSibling,
+  onSelect,
+}: {
+  content: string
+  depth: 1 | 2 | 3
+  isLastSibling: boolean
+  onSelect: () => void
+}) {
+  const depthClass =
+    depth === 1
+      ? styles.threadDepthRowDepth1
+      : depth === 2
+        ? styles.threadDepthRowDepth2
+        : styles.threadDepthRowDepth3
+
+  return (
+    <TooltipWrap label={content} className={styles.threadDepthTooltipWrap}>
+      <button
+        type="button"
+        className={`${styles.threadDepthRow} ${depthClass}`}
+        onClick={onSelect}
+      >
+        {depth === 1 ? (
+          <span className={styles.threadDepthBullet} aria-hidden />
+        ) : (
+          <ThreadBranchIcon isLast={isLastSibling} />
+        )}
+        <span className={styles.threadDepthText}>{content}</span>
+      </button>
+    </TooltipWrap>
   )
 }
 
@@ -191,57 +253,71 @@ type ThreadPanelGroup = {
   branches: ThreadPanelBranch[]
 }
 
-function buildThreadPanelGroups(thread: ChatLine[]): ThreadPanelGroup[] {
-  const groups: ThreadPanelGroup[] = []
-  let current: ThreadPanelGroup | null = null
-  let currentBranch: ThreadPanelBranch | null = null
-
-  for (const line of thread) {
-    if (line.role !== 'user') continue
-    const depth = line.questionDepth ?? 1
-
-    if (depth === 1) {
-      current = { root: { id: line.id, content: line.content }, branches: [] }
-      groups.push(current)
-      currentBranch = null
-      continue
-    }
-
-    if (!current) {
-      current = { root: { id: line.id, content: line.content }, branches: [] }
-      groups.push(current)
-      currentBranch = null
-      continue
-    }
-
-    if (depth === 2) {
-      const branch: ThreadPanelBranch = {
-        id: line.id,
-        content: line.content,
+/** Figma `24360:35151` — 질문 흐름 패널 mock 트리 */
+const MOCK_THREAD_PANEL_GROUPS: ThreadPanelGroup[] = [
+  {
+    root: {
+      id: 'mock-thread-root-1',
+      content: '쿠팡과 11번가의 최근 1년간 MAU 추이 비교',
+    },
+    branches: [
+      {
+        id: 'mock-thread-d2-1',
+        content: '쿠팡 MAU 성장 요인 분석',
+        children: [
+          { id: 'mock-thread-d3-1', content: '로켓배송 락인 효과 분석' },
+          { id: 'mock-thread-d3-2', content: '쿠팡 와우 멤버십 가입 추이' },
+        ],
+      },
+      {
+        id: 'mock-thread-d2-2',
+        content: '11번가 MAU 감소 원인',
+        children: [
+          { id: 'mock-thread-d3-4', content: '11번가 이탈 사용자 패턴' },
+          { id: 'mock-thread-d3-5', content: '이탈 후 이동한 앱 분석' },
+          { id: 'mock-thread-d3-6', content: '이탈 시점 공통 패턴' },
+        ],
+      },
+    ],
+  },
+  {
+    root: {
+      id: 'mock-thread-root-2',
+      content: '쇼핑 업종 상위 앱 점유율 현황',
+    },
+    branches: [
+      {
+        id: 'mock-thread-d2-3',
+        content: '쿠팡 vs G마켓 사용자 비교',
+        children: [
+          { id: 'mock-thread-d3-7', content: '연령대별 선호 앱 차이' },
+        ],
+      },
+      {
+        id: 'mock-thread-d2-4',
+        content: '신규 쇼핑 앱 성장세 분석',
         children: [],
-      }
-      current.branches.push(branch)
-      currentBranch = branch
-      continue
-    }
-
-    if (depth === 3) {
-      if (currentBranch) {
-        currentBranch.children.push({ id: line.id, content: line.content })
-      } else {
-        const branch: ThreadPanelBranch = {
-          id: line.id,
-          content: line.content,
-          children: [],
-        }
-        current.branches.push(branch)
-        currentBranch = branch
-      }
-    }
-  }
-
-  return groups
-}
+      },
+      {
+        id: 'mock-thread-d2-5',
+        content: '업종별 월간 사용자 증감 추이',
+        children: [],
+      },
+      {
+        id: 'mock-thread-d2-6',
+        content: '쇼핑 앱 재방문율 비교',
+        children: [],
+      },
+    ],
+  },
+  {
+    root: {
+      id: 'mock-thread-root-3',
+      content: '쿠팡과 G마켓의 신규 설치 건수 비교',
+    },
+    branches: [],
+  },
+]
 
 function QuestionFlowPanel({
   groups,
@@ -261,41 +337,40 @@ function QuestionFlowPanel({
           <div key={group.root.id}>
             {groupIdx > 0 ? <div className={styles.threadPanelDivider} aria-hidden /> : null}
             <div className={styles.threadPanelGroup}>
-              <button
-                type="button"
-                className={`${styles.threadDepthRow} ${styles.threadDepthRowDepth1}`}
-                onClick={() => onSelectQuestion(group.root.id)}
-              >
-                <span className={styles.threadDepthBullet} aria-hidden />
-                <span className={styles.threadDepthText}>{group.root.content}</span>
-              </button>
+              <ThreadDepthRowButton
+                depth={1}
+                content={group.root.content}
+                isLastSibling={false}
+                onSelect={() => onSelectQuestion(group.root.id)}
+              />
               {group.branches.map((branch, branchIdx) => {
-                const isLastBranch = branchIdx === group.branches.length - 1
+                const branchCount = group.branches.length
                 const hasChildren = branch.children.length > 0
+                const depth2IconIsLast = isDepth2BranchIconLast(
+                  branchIdx,
+                  branchCount,
+                  hasChildren,
+                )
                 return (
                   <div key={branch.id} className={styles.threadBranchGroup}>
-                    <button
-                      type="button"
-                      className={`${styles.threadDepthRow} ${styles.threadDepthRowDepth2}`}
-                      onClick={() => onSelectQuestion(branch.id)}
-                    >
-                      <ThreadBranch isLast={isLastBranch && !hasChildren} />
-                      <span className={styles.threadDepthText}>{branch.content}</span>
-                    </button>
+                    <ThreadDepthRowButton
+                      depth={2}
+                      content={branch.content}
+                      isLastSibling={depth2IconIsLast}
+                      onSelect={() => onSelectQuestion(branch.id)}
+                    />
                     {hasChildren ? (
                       <div className={styles.threadDepth3Group}>
                         {branch.children.map((child, childIdx) => {
                           const isLastChild = childIdx === branch.children.length - 1
                           return (
-                            <button
+                            <ThreadDepthRowButton
                               key={child.id}
-                              type="button"
-                              className={`${styles.threadDepthRow} ${styles.threadDepthRowDepth3}`}
-                              onClick={() => onSelectQuestion(child.id)}
-                            >
-                              <ThreadBranch isLast={isLastChild} />
-                              <span className={styles.threadDepthText}>{child.content}</span>
-                            </button>
+                              depth={3}
+                              content={child.content}
+                              isLastSibling={isLastChild}
+                              onSelect={() => onSelectQuestion(child.id)}
+                            />
                           )
                         })}
                       </div>
@@ -1095,7 +1170,7 @@ export default function LandingPage() {
     return m
   }, [thread])
 
-  const threadPanelGroups = useMemo(() => buildThreadPanelGroups(thread), [thread])
+  const threadPanelGroups = MOCK_THREAD_PANEL_GROUPS
 
   const scrollToQuestion = useCallback(
     (lineId: string) => {
@@ -1438,6 +1513,7 @@ export default function LandingPage() {
   return (
     <Layout onResetToHome={handleResetToHome}>
       <div className={styles.chatMainColumn}>
+        <div className={styles.chatMainPadded}>
               {showChatHeader ? (
                 <header className={styles.chatHeader}>
                   <h2 className={styles.chatHeaderTitle}>{headerQuestionText}</h2>
@@ -1927,7 +2003,7 @@ export default function LandingPage() {
               </div>
               </div>
             )}
-      </div>
+              </div>
             <div className={styles.composerWrap}>
               {toastMessage ? (
             <div
@@ -2139,7 +2215,8 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
-            </div>
+        </div>
+      </div>
       </div>
       {hasConversation && isThreadPanelOpen ? (
         <QuestionFlowPanel
