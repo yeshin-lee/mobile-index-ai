@@ -11,11 +11,10 @@
   min-width: 0;
   margin: 0 auto;
   flex: 1;
-  height: 100%;
   display: flex;
   flex-direction: column;
   min-height: 0;
-  overflow: visible;
+  overflow: clip;
   box-sizing: border-box;
   padding: 0;
   border: none;
@@ -41,7 +40,7 @@
 .mainContentChat {
   flex: 0 0 auto;
   justify-content: flex-start;
-  gap: 0;
+  gap: 24px;
   overflow: visible;
   padding: 24px 0 0;
   border: none;
@@ -62,7 +61,6 @@
 /* Figma layout (`24360:33659`) — Layout.mainColumn(row): chatMainColumn | threadPanel */
 .chatMainColumn {
   flex: 1 1 0;
-  height: 100%;
   min-width: 0;
   min-height: 0;
   display: flex;
@@ -74,7 +72,6 @@
 /* 헤더 + 답변 + 질문창 — 좌우 20px (패널은 형제로 패딩 미적용) */
 .chatMainPadded {
   flex: 1 1 0;
-  height: 100%;
   min-width: 0;
   min-height: 0;
   display: flex;
@@ -90,10 +87,9 @@
   height: 100%;
   min-width: 0;
   min-height: 0;
-  width: 100%;
-  overflow-y: scroll;
+  overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-gutter: stable;
+  overflow-anchor: none;
   box-sizing: border-box;
   padding: 0;
   border: none;
@@ -328,7 +324,7 @@
 .chatStage {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 12px;
   width: 100%;
   max-width: var(--answer-content-max);
   min-width: 0;
@@ -342,12 +338,6 @@
   display: flex;
   justify-content: flex-end;
   width: 100%;
-}
-
-.questionDivider {
-  width: 100%;
-  margin: 24px 0;
-  border-top: 1px solid var(--gray-700);
 }
 
 .questionBubbleRow {

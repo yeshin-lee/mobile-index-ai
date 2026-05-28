@@ -1,4 +1,5 @@
 import {
+  Fragment,
   type KeyboardEvent,
   type ReactNode,
   useCallback,
@@ -8,6 +9,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { flushSync } from 'react-dom'
 import {
   CHART_COMBO_ANIMATION_MS,
   MockComboRechartsChart,
@@ -683,6 +685,7 @@ type ChatLine =
       chartForecastText?: string
       chartInsight1Text?: string
       chartInsight2Text?: string
+      showScrollPadding?: boolean
     }
 
 const CHART_INTRO_TEXT =
@@ -1099,10 +1102,8 @@ export default function LandingPage() {
   const [isThreadPanelOpen, setIsThreadPanelOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const composerRef = useRef<HTMLDivElement>(null)
-  const scrollContainerRef = useRef<HTMLDivElement | null>(null)
   const streamAbortRef = useRef<AbortController | null>(null)
   const threadRef = useRef<ChatLine[]>([])
-  const pendingScrollQuestionLineIdRef = useRef<string | null>(null)
 
   /** 답변 피드백 — line.id 기준 */
   type FeedbackPhase = 'choosing' | 'liked' | 'disliked'
@@ -1247,6 +1248,14 @@ export default function LandingPage() {
       } else {
         await sleep(2000 + Math.random() * 1000, ac.signal)
       }
+      setThread((prev) => {
+        const next = [...prev]
+        const last = next[next.length - 1]
+        if (last?.role === 'assistant') {
+          next[next.length - 1] = { ...last, showScrollPadding: false }
+        }
+        return next
+      })
       if (payload.kind === 'unavailable') {
         const full = payload.text
         await streamTextByWords(full, ac.signal, (slice) => {
@@ -1402,6 +1411,7 @@ export default function LandingPage() {
       id: newId(),
       role: 'assistant',
       content: '',
+      showScrollPadding: true,
       replyKind:
         payload.kind === 'chart'
           ? 'chart'
@@ -1412,8 +1422,35 @@ export default function LandingPage() {
       ...(payload.kind === 'text' ? { mockCategory: payload.mockCategory } : {}),
     }
 
-    pendingScrollQuestionLineIdRef.current = userLine.id
-    setThread((prev) => [...prev, userLine, asstLine])
+    flushSync(() => {
+      setThread((prev) => [...prev, userLine])
+    })
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+
+    const targetEl = document.querySelector(
+      `[data-line-id="${userLine.id}"]`,
+    ) as HTMLElement | null
+    const container = document.querySelector(
+      '[class*="chat-scroll-container"]',
+    ) as HTMLElement | null
+
+    if (targetEl && container) {
+      const scrollTarget = Math.max(
+        0,
+        targetEl.getBoundingClientRect().top -
+          container.getBoundingClientRect().top +
+          container.scrollTop,
+      )
+      setThread((prev) => [...prev, asstLine])
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          container.scrollTop = scrollTarget
+        })
+      })
+    } else {
+      setThread((prev) => [...prev, asstLine])
+    }
 
     await runMockAssistantStream(payload, answerMode === '심화 답변')
   }
@@ -1476,40 +1513,6 @@ export default function LandingPage() {
   useEffect(() => {
     threadRef.current = thread
   }, [thread])
-
-  useEffect(() => {
-    const lineId = pendingScrollQuestionLineIdRef.current
-    if (!lineId) return
-    const qIndex = userQuestionIndexByLineId.get(lineId)
-    if (qIndex === undefined) return
-
-    const timer = setTimeout(() => {
-      const container = scrollContainerRef.current
-      if (!container) return
-
-      const targetEl =
-        qIndex === 0
-          ? document.getElementById('question-0')
-          : document.getElementById(`divider-${qIndex}`) ??
-            document.getElementById(`question-${qIndex}`)
-
-      if (targetEl) {
-        const headerEl = document.querySelector('header[class*="chatHeader"]')
-        const headerHeight = headerEl ? headerEl.getBoundingClientRect().height : 0
-        const containerTop = container.getBoundingClientRect().top
-        const targetTop = targetEl.getBoundingClientRect().top
-        const offset = Math.max(
-          0,
-          container.scrollTop + (targetTop - containerTop) - headerHeight - 24,
-        )
-        container.scrollTo({ top: offset, behavior: 'smooth' })
-      }
-
-      pendingScrollQuestionLineIdRef.current = null
-    }, 100)
-
-    return () => clearTimeout(timer)
-  }, [thread, userQuestionIndexByLineId])
 
   useEffect(() => {
     if (openMenu === null) return
@@ -1582,10 +1585,7 @@ export default function LandingPage() {
               ) : null}
               <div className={styles.contentInner}>
             {hasConversation ? (
-              <div
-                ref={scrollContainerRef}
-                className={styles['chat-scroll-container']}
-              >
+              <div className={styles['chat-scroll-container']}>
                 <div
                   className={`${styles.mainContent} ${styles.mainContentChat} ${styles.chatStage}`}
                 >
@@ -1594,58 +1594,52 @@ export default function LandingPage() {
                   const starred = favoriteQuestions.includes(line.content)
                   const qIndex = userQuestionIndexByLineId.get(line.id)!
                   return (
-                    <div key={line.id}>
-                      {qIndex > 0 ? (
-                        <div
-                          id={`divider-${qIndex}`}
-                          className={styles.questionDivider}
-                          aria-hidden
-                        />
-                      ) : null}
-                      <div
-                        id={`question-${qIndex}`}
-                        className={styles.questionBubbleWrap}
-                      >
-                        <div className={styles.questionBubbleRow}>
-                          <TooltipWrap
-                            label={
+                    <div
+                      key={line.id}
+                      id={`question-${qIndex}`}
+                      data-line-id={line.id}
+                      className={styles.questionBubbleWrap}
+                      style={{ overflowAnchor: 'auto' }}
+                    >
+                      <div className={styles.questionBubbleRow}>
+                        <TooltipWrap
+                          label={
+                            starred
+                              ? '즐겨찾는 질문 해제'
+                              : '즐겨찾는 질문에 추가'
+                          }
+                        >
+                          <button
+                            type="button"
+                            className={styles.questionStarBtn}
+                            aria-label={
                               starred
                                 ? '즐겨찾는 질문 해제'
                                 : '즐겨찾는 질문에 추가'
                             }
+                            aria-pressed={starred}
+                            onClick={() => toggleFavoriteForQuestion(line.content)}
                           >
-                            <button
-                              type="button"
-                              className={styles.questionStarBtn}
-                              aria-label={
-                                starred
-                                  ? '즐겨찾는 질문 해제'
-                                  : '즐겨찾는 질문에 추가'
-                              }
-                              aria-pressed={starred}
-                              onClick={() => toggleFavoriteForQuestion(line.content)}
-                            >
-                              <span className={styles.questionStarInner}>
-                                <img
-                                  src={icoBookmarkBorder}
-                                  alt=""
-                                  width={20}
-                                  height={20}
-                                  className={styles.questionStarImgBorder}
-                                />
-                                <img
-                                  src={icoBookmarkFilled}
-                                  alt=""
-                                  width={20}
-                                  height={20}
-                                  className={styles.questionStarImgFilled}
-                                />
-                              </span>
-                            </button>
-                          </TooltipWrap>
-                          <div className={styles.questionBubble}>
-                            <p className={styles.questionText}>{line.content}</p>
-                          </div>
+                            <span className={styles.questionStarInner}>
+                              <img
+                                src={icoBookmarkBorder}
+                                alt=""
+                                width={20}
+                                height={20}
+                                className={styles.questionStarImgBorder}
+                              />
+                              <img
+                                src={icoBookmarkFilled}
+                                alt=""
+                                width={20}
+                                height={20}
+                                className={styles.questionStarImgFilled}
+                              />
+                            </span>
+                          </button>
+                        </TooltipWrap>
+                        <div className={styles.questionBubble}>
+                          <p className={styles.questionText}>{line.content}</p>
                         </div>
                       </div>
                     </div>
@@ -1656,36 +1650,38 @@ export default function LandingPage() {
                 const showLoader = isLast && isSending && !line.content
                 if (showLoader) {
                   return (
-                    <div
-                      key={line.id}
-                      className={styles.loadingBlock}
-                      data-variant={loadingVariant}
-                    >
-                      <div className={styles.loadingLogoRow}>
-                        <img
-                          src={icoSymbol}
-                          alt=""
-                          width={30}
-                          height={30}
-                          className={styles.loadingAgentIcon}
-                        />
-                        <span className={styles.loadingAgentTitle}>MI AI Agent</span>
-                      </div>
-                      <div className={styles.loadingAnswerCol}>
-                        <p className={styles.loadingGradientText}>
-                          {loadingVariant === 'complex'
-                            ? '데이터를 분석하고 인사이트를 생성하고 있습니다...'
-                            : '답변을 생성하고 있습니다...'}
-                        </p>
-                        <div className={styles.loadingSkeletonCol} aria-hidden>
-                          <div className={styles.loadingSkeletonBar} />
-                          <div className={styles.loadingSkeletonBar} />
-                          <div
-                            className={`${styles.loadingSkeletonBar} ${styles.loadingSkeletonBarShort}`}
+                    <Fragment key={line.id}>
+                      <div
+                        className={styles.loadingBlock}
+                        data-variant={loadingVariant}
+                      >
+                        <div className={styles.loadingLogoRow}>
+                          <img
+                            src={icoSymbol}
+                            alt=""
+                            width={30}
+                            height={30}
+                            className={styles.loadingAgentIcon}
                           />
+                          <span className={styles.loadingAgentTitle}>MI AI Agent</span>
+                        </div>
+                        <div className={styles.loadingAnswerCol}>
+                          <p className={styles.loadingGradientText}>
+                            {loadingVariant === 'complex'
+                              ? '데이터를 분석하고 인사이트를 생성하고 있습니다...'
+                              : '답변을 생성하고 있습니다...'}
+                          </p>
+                          <div className={styles.loadingSkeletonCol} aria-hidden>
+                            <div className={styles.loadingSkeletonBar} />
+                            <div className={styles.loadingSkeletonBar} />
+                            <div
+                              className={`${styles.loadingSkeletonBar} ${styles.loadingSkeletonBarShort}`}
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
+                      <div style={{ height: '200px', flexShrink: 0 }} />
+                    </Fragment>
                   )
                 }
 

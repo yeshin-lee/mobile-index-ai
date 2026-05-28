@@ -472,8 +472,6 @@
   min-width: 0;
   min-height: 0;
   background: transparent;
-  overflow-y: auto;
-  overflow-x: hidden;
 }
 
 .mainColumn {
