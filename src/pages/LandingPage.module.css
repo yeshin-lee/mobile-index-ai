@@ -90,12 +90,18 @@
   overflow-y: auto;
   overflow-x: hidden;
   overflow-anchor: none;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
   box-sizing: border-box;
   padding: 0;
   border: none;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+}
+
+.chat-scroll-container::-webkit-scrollbar {
+  display: none;
 }
 
 /* Figma thread sheet (`24360:35151`) */
