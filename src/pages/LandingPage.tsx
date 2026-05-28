@@ -1515,6 +1515,15 @@ export default function LandingPage() {
   }, [thread])
 
   useEffect(() => {
+    if (!isSending) return
+    const container = document.querySelector(
+      '[class*="chat-scroll-container"]',
+    ) as HTMLElement | null
+    if (!container) return
+    container.scrollTop = container.scrollHeight
+  }, [thread, isSending])
+
+  useEffect(() => {
     if (openMenu === null) return
     function handlePointerDown(ev: PointerEvent) {
       const el = composerRef.current
