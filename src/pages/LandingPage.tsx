@@ -1099,8 +1099,10 @@ export default function LandingPage() {
   const [isThreadPanelOpen, setIsThreadPanelOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const composerRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null)
   const streamAbortRef = useRef<AbortController | null>(null)
   const threadRef = useRef<ChatLine[]>([])
+  const pendingScrollQuestionLineIdRef = useRef<string | null>(null)
 
   /** 답변 피드백 — line.id 기준 */
   type FeedbackPhase = 'choosing' | 'liked' | 'disliked'
@@ -1410,6 +1412,7 @@ export default function LandingPage() {
       ...(payload.kind === 'text' ? { mockCategory: payload.mockCategory } : {}),
     }
 
+    pendingScrollQuestionLineIdRef.current = userLine.id
     setThread((prev) => [...prev, userLine, asstLine])
 
     await runMockAssistantStream(payload, answerMode === '심화 답변')
@@ -1473,6 +1476,40 @@ export default function LandingPage() {
   useEffect(() => {
     threadRef.current = thread
   }, [thread])
+
+  useEffect(() => {
+    const lineId = pendingScrollQuestionLineIdRef.current
+    if (!lineId) return
+    const qIndex = userQuestionIndexByLineId.get(lineId)
+    if (qIndex === undefined) return
+
+    const timer = setTimeout(() => {
+      const container = scrollContainerRef.current
+      if (!container) return
+
+      const targetEl =
+        qIndex === 0
+          ? document.getElementById('question-0')
+          : document.getElementById(`divider-${qIndex}`) ??
+            document.getElementById(`question-${qIndex}`)
+
+      if (targetEl) {
+        const headerEl = document.querySelector('header[class*="chatHeader"]')
+        const headerHeight = headerEl ? headerEl.getBoundingClientRect().height : 0
+        const containerTop = container.getBoundingClientRect().top
+        const targetTop = targetEl.getBoundingClientRect().top
+        const offset = Math.max(
+          0,
+          container.scrollTop + (targetTop - containerTop) - headerHeight - 24,
+        )
+        container.scrollTo({ top: offset, behavior: 'smooth' })
+      }
+
+      pendingScrollQuestionLineIdRef.current = null
+    }, 100)
+
+    return () => clearTimeout(timer)
+  }, [thread, userQuestionIndexByLineId])
 
   useEffect(() => {
     if (openMenu === null) return
@@ -1545,7 +1582,10 @@ export default function LandingPage() {
               ) : null}
               <div className={styles.contentInner}>
             {hasConversation ? (
-              <div className={styles['chat-scroll-container']}>
+              <div
+                ref={scrollContainerRef}
+                className={styles['chat-scroll-container']}
+              >
                 <div
                   className={`${styles.mainContent} ${styles.mainContentChat} ${styles.chatStage}`}
                 >
@@ -1554,50 +1594,58 @@ export default function LandingPage() {
                   const starred = favoriteQuestions.includes(line.content)
                   const qIndex = userQuestionIndexByLineId.get(line.id)!
                   return (
-                    <div
-                      key={line.id}
-                      id={`question-${qIndex}`}
-                      className={styles.questionBubbleWrap}
-                    >
-                      <div className={styles.questionBubbleRow}>
-                        <TooltipWrap
-                          label={
-                            starred
-                              ? '즐겨찾는 질문 해제'
-                              : '즐겨찾는 질문에 추가'
-                          }
-                        >
-                          <button
-                            type="button"
-                            className={styles.questionStarBtn}
-                            aria-label={
+                    <div key={line.id}>
+                      {qIndex > 0 ? (
+                        <div
+                          id={`divider-${qIndex}`}
+                          className={styles.questionDivider}
+                          aria-hidden
+                        />
+                      ) : null}
+                      <div
+                        id={`question-${qIndex}`}
+                        className={styles.questionBubbleWrap}
+                      >
+                        <div className={styles.questionBubbleRow}>
+                          <TooltipWrap
+                            label={
                               starred
                                 ? '즐겨찾는 질문 해제'
                                 : '즐겨찾는 질문에 추가'
                             }
-                            aria-pressed={starred}
-                            onClick={() => toggleFavoriteForQuestion(line.content)}
                           >
-                            <span className={styles.questionStarInner}>
-                              <img
-                                src={icoBookmarkBorder}
-                                alt=""
-                                width={20}
-                                height={20}
-                                className={styles.questionStarImgBorder}
-                              />
-                              <img
-                                src={icoBookmarkFilled}
-                                alt=""
-                                width={20}
-                                height={20}
-                                className={styles.questionStarImgFilled}
-                              />
-                            </span>
-                          </button>
-                        </TooltipWrap>
-                        <div className={styles.questionBubble}>
-                          <p className={styles.questionText}>{line.content}</p>
+                            <button
+                              type="button"
+                              className={styles.questionStarBtn}
+                              aria-label={
+                                starred
+                                  ? '즐겨찾는 질문 해제'
+                                  : '즐겨찾는 질문에 추가'
+                              }
+                              aria-pressed={starred}
+                              onClick={() => toggleFavoriteForQuestion(line.content)}
+                            >
+                              <span className={styles.questionStarInner}>
+                                <img
+                                  src={icoBookmarkBorder}
+                                  alt=""
+                                  width={20}
+                                  height={20}
+                                  className={styles.questionStarImgBorder}
+                                />
+                                <img
+                                  src={icoBookmarkFilled}
+                                  alt=""
+                                  width={20}
+                                  height={20}
+                                  className={styles.questionStarImgFilled}
+                                />
+                              </span>
+                            </button>
+                          </TooltipWrap>
+                          <div className={styles.questionBubble}>
+                            <p className={styles.questionText}>{line.content}</p>
+                          </div>
                         </div>
                       </div>
                     </div>
