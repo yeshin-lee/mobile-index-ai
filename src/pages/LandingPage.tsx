@@ -9,14 +9,19 @@ import {
   useRef,
   useState,
 } from 'react'
-import { flushSync } from 'react-dom'
+import { createPortal, flushSync } from 'react-dom'
 import {
   CHART_COMBO_ANIMATION_MS,
   MockComboRechartsChart,
 } from '../components/MockComboRechartsChart'
-import Layout from '../components/Layout'
+import {
+  MOCK_CHART_VARIANT2_TOTAL_HEIGHT,
+  MockChartVariant2,
+} from '../components/MockChartVariant2'
+import Layout, { APP_MODAL_ROOT_ID } from '../components/Layout'
 import { TooltipWrap } from '../components/TooltipWrap'
 import imgAppicon from '../assets/img_appicon.png'
+import imgAppicon2 from '../assets/img_appicon_2.png'
 import icoBookmark from '../assets/ico_boomark.svg'
 import icoBookmarkBorder from '../assets/ico_bookmark_border.svg'
 import icoBookmarkFilled from '../assets/ico_bookmark_filled.svg'
@@ -31,6 +36,7 @@ import icoLike from '../assets/ico_like.svg'
 import icoBranchLast from '../assets/ico_branch_last.svg'
 import icoBranchMiddle from '../assets/ico_branch_middle.svg'
 import icoClose from '../assets/ico_close.svg'
+import icoModalClose from '../assets/ico_modal_close.svg'
 import icoOpen from '../assets/ico_open.svg'
 import icoPause from '../assets/ico_pause.svg'
 import icoReplay from '../assets/ico_replay.svg'
@@ -69,10 +75,10 @@ const INITIAL_FAVORITE_QUESTIONS = [
 /** 탭별 추천 질문 (순서: 현황 파악, 변화 추적, 원인 탐색, 향후 예측) */
 const RECOMMENDED_QUESTIONS_BY_TAB: readonly (readonly string[])[] = [
   [
-    '1위 앱과 2위 앱의 신규 설치 재방문율 격차가 가장 큰 업종은?',
+    '1위와 2위 앱의 신규 설치 재방문율 격차가 가장 큰 업종은?',
     '활성 기기 수가 가장 낮은 앱/업종을 알려줘',
-    '쿠팡과 11번가의 최근 1년간의 MAU 추이를 비교해줘',
-    'G마켓의 1인당 사용시간이 가장 높은 사용자들은 누구인지 알려줘',
+    '쿠팡의 최근 1년간 MAU 추이를 비교해줘',
+    'G마켓의 1인당 사용시간이 가장 높은 사용자는?',
   ],
   [
     '최근 3개월간 MAU 변화 추이를 알려줘',
@@ -666,6 +672,7 @@ type TextMockCategory = 'data' | 'industry' | 'default'
 type ReplyKind = 'chart' | 'text' | 'unavailable'
 
 type ChartAnswerDepth = 'basic' | 'deep'
+type ChartMockVariant = 'combo' | 'churn'
 
 type QuestionDepth = 1 | 2 | 3
 
@@ -678,6 +685,7 @@ type ChatLine =
       replyKind: ReplyKind
       mockCategory?: TextMockCategory
       chartDepth?: ChartAnswerDepth
+      chartMockVariant?: ChartMockVariant
       chartVisible?: boolean
       chartSectionsReady?: boolean
       chartIndicatorText?: string
@@ -693,6 +701,73 @@ const CHART_INTRO_TEXT =
 
 const CHART_CARD_TITLE =
   '쿠팡의 2024년 4월~2025년 3월 MAU, 신규 설치 건 수 추이 비교'
+
+const CHART2_CARD_TITLE =
+  'G마켓의 최근 3개월 이탈 사용자 이동 앱 및 연령대별 성별 분포'
+
+const CHART2_APP_TABLE_ROWS = [
+  { app: '쿠팡', rate: '38%' },
+  { app: '네이버쇼핑', rate: '24%' },
+  { app: '무신사', rate: '15%' },
+  { app: '올리브영', rate: '12%' },
+  { app: '기타', rate: '11%' },
+] as const
+
+const CHART2_COHORT_TABLE_ROWS = [
+  { age: '20대', male: '45%', female: '55%', topApp: '무신사' },
+  { age: '30대', male: '52%', female: '48%', topApp: '쿠팡' },
+  { age: '40대', male: '56%', female: '44%', topApp: '네이버쇼핑' },
+  { age: '50대', male: '60%', female: '40%', topApp: '쿠팡' },
+] as const
+
+const CHART2_INTRO_TEXT =
+  'G마켓 최근 3개월 이탈 사용자는 쿠팡·네이버쇼핑으로 주로 이동했으며, 연령대별로 이탈 후 이동 앱과 성별 분포에 차이가 나타납니다.'
+
+const CHART2_INTRO_HIGHLIGHTS = ['쿠팡·네이버쇼핑', '이동 앱', '성별 분포'] as const
+
+const CHART2_DEEP_INTRO_TEXT =
+  'G마켓 최근 3개월 이탈 사용자의 38%가 쿠팡으로 이동했으며, 30대 여성 이탈률이 가장 높고 향후 이탈 가속화 가능성이 예측됩니다.'
+
+const CHART2_DEEP_INTRO_HIGHLIGHTS = ['38%가 쿠팡으로', '30대 여성', '이탈 가속화'] as const
+
+const CHART2_INDICATOR_PLAIN =
+  '최근 3개월간 G마켓 이탈 사용자 중 쿠팡 이동 비율이 38%로 가장 높았으며, 네이버쇼핑(24%), 무신사(15%) 순으로 나타났습니다. 연령대별로는 30대의 이탈률이 59%로 가장 높았고, 20대(40%), 40대(43%) 순이었습니다.'
+
+const CHART2_INDICATOR_BODY = (
+  <>
+    최근 3개월간 G마켓 이탈 사용자 중 <strong>쿠팡 이동 비율이 38%</strong>로 가장 높았으며,
+    네이버쇼핑(24%), 무신사(15%) 순으로 나타났습니다. 연령대별로는{' '}
+    <strong>30대의 이탈률이 59%</strong>로 가장 높았고, 20대(40%), 40대(43%) 순이었습니다.
+  </>
+)
+
+const CHART2_CAUSE_PLAIN =
+  '30대 여성 이탈의 주요 원인은 쿠팡의 로켓배송 및 와우 멤버십 혜택 확대로 분석됩니다. 특히 2025년 1월 쿠팡의 뷰티 카테고리 강화 이후 30대 여성 이탈이 전월 대비 12% 증가했습니다.'
+
+const CHART2_CAUSE_BODY = (
+  <>
+    30대 여성 이탈의 주요 원인은 <strong>쿠팡의 로켓배송 및 와우 멤버십 혜택 확대</strong>로
+    분석됩니다. 특히 2025년 1월 쿠팡의 뷰티 카테고리 강화 이후{' '}
+    <strong>30대 여성 이탈이 전월 대비 12% 증가</strong>했습니다.
+  </>
+)
+
+const CHART2_FORECAST_PLAIN =
+  '현재 추이가 지속될 경우 2025년 2분기 내 30대 이탈률이 65%를 넘어설 것으로 예측됩니다. 특히 쿠팡의 멤버십 혜택이 추가 확대될 경우 이탈 가속화 가능성이 높습니다.'
+
+const CHART2_FORECAST_BODY = (
+  <>
+    현재 추이가 지속될 경우 <strong>2025년 2분기 내 30대 이탈률이 65%</strong>를 넘어설 것으로
+    예측됩니다. 특히 쿠팡의 멤버십 혜택이 추가 확대될 경우{' '}
+    <strong>이탈 가속화 가능성</strong>이 높습니다.
+  </>
+)
+
+const CHART2_INSIGHT1_PLAIN =
+  '30대 여성 타겟 리텐션 캠페인이 가장 시급하며, 뷰티/패션 카테고리 혜택 강화가 효과적일 것으로 판단됩니다.'
+
+const CHART2_INSIGHT2_PLAIN =
+  '쿠팡 멤버십 혜택과 차별화된 자사 멤버십 프로그램 도입을 검토할 필요가 있습니다.'
 
 const CHART_MONTH_LABELS = [
   '2024.04',
@@ -784,18 +859,41 @@ function classifyReplyKind(question: string): ReplyKind {
 
 type StreamPayload =
   | { kind: 'text'; text: string; mockCategory: TextMockCategory }
-  | { kind: 'chart'; intro: string; depth: ChartAnswerDepth }
+  | { kind: 'chart'; intro: string; depth: ChartAnswerDepth; variant: ChartMockVariant }
   | { kind: 'unavailable'; text: string }
 
-function buildStreamPayload(question: string, answerMode: AnswerMode): StreamPayload {
+function countChartRepliesInThread(thread: ChatLine[]): number {
+  return thread.filter(
+    (line) => line.role === 'assistant' && line.replyKind === 'chart',
+  ).length
+}
+
+function chartVariantForThread(thread: ChatLine[]): ChartMockVariant {
+  const chartCount = countChartRepliesInThread(thread)
+  return chartCount % 2 === 0 ? 'combo' : 'churn'
+}
+
+function buildStreamPayload(
+  question: string,
+  answerMode: AnswerMode,
+  thread: ChatLine[],
+): StreamPayload {
   const kind = classifyReplyKind(question)
   if (kind === 'unavailable') {
     return { kind: 'unavailable', text: UNAVAILABLE_REPLY_TEXT }
   }
   if (kind === 'chart') {
     const depth: ChartAnswerDepth = answerMode === '심화 답변' ? 'deep' : 'basic'
-    const intro = depth === 'deep' ? CHART_DEEP_INTRO_TEXT : CHART_INTRO_TEXT
-    return { kind: 'chart', intro, depth }
+    const variant = chartVariantForThread(thread)
+    const intro =
+      variant === 'churn'
+        ? depth === 'deep'
+          ? CHART2_DEEP_INTRO_TEXT
+          : CHART2_INTRO_TEXT
+        : depth === 'deep'
+          ? CHART_DEEP_INTRO_TEXT
+          : CHART_INTRO_TEXT
+    return { kind: 'chart', intro, depth, variant }
   }
   const { text, category } = getTextMockForQuestion(question)
   return { kind: 'text', text, mockCategory: category }
@@ -807,6 +905,8 @@ function isTypedComplete(typed: string, plain: string): boolean {
 
 function assistantPlainText(line: Extract<ChatLine, { role: 'assistant' }>): string {
   if (line.replyKind === 'chart') {
+    const isChurn = line.chartMockVariant === 'churn'
+    const cardTitle = isChurn ? CHART2_CARD_TITLE : CHART_CARD_TITLE
     const ind = line.chartIndicatorText ?? ''
     const cause = line.chartCauseText ?? ''
     const fore = line.chartForecastText ?? ''
@@ -816,7 +916,7 @@ function assistantPlainText(line: Extract<ChatLine, { role: 'assistant' }>): str
     if (line.chartDepth === 'deep') {
       return [
         line.content,
-        CHART_CARD_TITLE,
+        cardTitle,
         `지표 설명: ${ind}`,
         `원인 분석: ${cause}`,
         `향후 예측: ${fore}`,
@@ -825,7 +925,7 @@ function assistantPlainText(line: Extract<ChatLine, { role: 'assistant' }>): str
         .join('\n\n')
         .trim()
     }
-    return `${line.content}\n\n${CHART_CARD_TITLE}\n\n지표 설명: ${ind}`.trim()
+    return `${line.content}\n\n${cardTitle}\n\n지표 설명: ${ind}`.trim()
   }
   return line.content
 }
@@ -953,8 +1053,282 @@ function splitAnswerWithKeywords(
   return out
 }
 
-function ChartMockCard() {
-  const [view, setView] = useState<'chart' | 'table'>('chart')
+type ChartPanelView = 'chart' | 'table'
+type ChartTableTab = 'apps' | 'cohort'
+
+function ChartTableTabToggle({
+  tab,
+  onTabChange,
+}: {
+  tab: ChartTableTab
+  onTabChange: (next: ChartTableTab) => void
+}) {
+  return (
+    <div className={styles.chartTableTabBar} role="tablist" aria-label="표 보기 탭">
+      <button
+        type="button"
+        role="tab"
+        id="chart-table-tab-apps"
+        aria-selected={tab === 'apps'}
+        aria-controls="chart-table-panel-apps"
+        className={tab === 'apps' ? styles.chartTableTabActive : styles.chartTableTab}
+        onClick={() => onTabChange('apps')}
+      >
+        이탈 앱 분포
+      </button>
+      <button
+        type="button"
+        role="tab"
+        id="chart-table-tab-cohort"
+        aria-selected={tab === 'cohort'}
+        aria-controls="chart-table-panel-cohort"
+        className={tab === 'cohort' ? styles.chartTableTabActive : styles.chartTableTab}
+        onClick={() => onTabChange('cohort')}
+      >
+        이탈자 분석
+      </button>
+    </div>
+  )
+}
+
+function ChartViewToggle({
+  view,
+  onViewChange,
+}: {
+  view: ChartPanelView
+  onViewChange: (next: ChartPanelView) => void
+}) {
+  return (
+    <div className={styles.chartToggleTrack} role="group" aria-label="차트 보기 형식">
+      <button
+        type="button"
+        className={view === 'chart' ? styles.chartTogglePillActive : styles.chartTogglePill}
+        aria-pressed={view === 'chart'}
+        aria-label="차트"
+        onClick={() => onViewChange('chart')}
+      >
+        <span className={styles.chartToggleIconShell}>
+          <span
+            className={`${styles.chartToggleGlyph} ${styles.chartToggleGlyphChart} ${
+              view === 'chart' ? styles.chartToggleGlyphOn : styles.chartToggleGlyphOff
+            }`}
+            aria-hidden
+          />
+        </span>
+      </button>
+      <button
+        type="button"
+        className={view === 'table' ? styles.chartTogglePillActive : styles.chartTogglePill}
+        aria-pressed={view === 'table'}
+        aria-label="표"
+        onClick={() => onViewChange('table')}
+      >
+        <span className={styles.chartToggleIconShell}>
+          <span
+            className={`${styles.chartToggleGlyph} ${styles.chartToggleGlyphTable} ${
+              view === 'table' ? styles.chartToggleGlyphOn : styles.chartToggleGlyphOff
+            }`}
+            aria-hidden
+          />
+        </span>
+      </button>
+    </div>
+  )
+}
+
+function ChartPanelBody({
+  view,
+  variant,
+}: {
+  view: ChartPanelView
+  variant: 'card' | 'expanded'
+}) {
+  const expanded = variant === 'expanded'
+  const mainBlockClass = expanded ? styles.chartExpandMainBlock : styles.chartMainBlock
+
+  if (view === 'chart') {
+    if (expanded) {
+      return (
+        <div className={styles.chartExpandViewStack}>
+          <div className={styles.chartExpandSvgWrap}>
+            <MockComboRechartsChart
+              className={styles.chartExpandSvgFill}
+              labels={CHART_MONTH_LABELS}
+              barValues={CHART_BAR_SERIES}
+              lineValues={CHART_LINE_SERIES}
+            />
+          </div>
+          <div className={styles.chartLegend}>
+            <span className={styles.chartLegendItem}>
+              <span
+                className={`${styles.chartLegendDot} ${styles.chartLegendDotLine}`}
+                aria-hidden
+              />
+              사용자 수 (MAU)
+            </span>
+            <span className={styles.chartLegendItem}>
+              <span
+                className={`${styles.chartLegendDot} ${styles.chartLegendDotBar}`}
+                aria-hidden
+              />
+              신규 설치 건 수
+            </span>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className={mainBlockClass}>
+        <div className={styles.chartViewStack}>
+          <div className={styles.chartSvgWrap}>
+            <MockComboRechartsChart
+              className={styles.chartSvgFill}
+              labels={CHART_MONTH_LABELS}
+              barValues={CHART_BAR_SERIES}
+              lineValues={CHART_LINE_SERIES}
+            />
+          </div>
+          <div className={styles.chartLegend}>
+            <span className={styles.chartLegendItem}>
+              <span
+                className={`${styles.chartLegendDot} ${styles.chartLegendDotLine}`}
+                aria-hidden
+              />
+              사용자 수 (MAU)
+            </span>
+            <span className={styles.chartLegendItem}>
+              <span
+                className={`${styles.chartLegendDot} ${styles.chartLegendDotBar}`}
+                aria-hidden
+              />
+              신규 설치 건 수
+            </span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className={mainBlockClass}>
+      <div className={expanded ? styles.chartExpandTableWrap : styles.chartTableWrap}>
+        <table className={styles.chartTable}>
+          <thead>
+            <tr>
+              <th className={styles.chartTh}>날짜</th>
+              <th className={styles.chartTh}>월간 사용자 수 (MAU)</th>
+              <th className={styles.chartTh}>신규 설치 건 수</th>
+            </tr>
+          </thead>
+          <tbody>
+            {CHART_MONTH_LABELS.map((m, i) => (
+              <tr key={m}>
+                <td className={styles.chartTd}>{m}</td>
+                <td className={styles.chartTd}>
+                  {CHART_LINE_SERIES[i]?.toLocaleString('ko-KR')}명
+                </td>
+                <td className={styles.chartTd}>
+                  {CHART_BAR_SERIES[i]?.toLocaleString('ko-KR')}건
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+function ChartPanelBody2({
+  view,
+  tableTab,
+  variant,
+}: {
+  view: ChartPanelView
+  tableTab: ChartTableTab
+  variant: 'card' | 'expanded'
+}) {
+  const expanded = variant === 'expanded'
+  const mainBlockClass = expanded ? styles.chartExpandMainBlock : styles.chartMainBlock
+  const tableWrapClass = expanded ? styles.chartExpandTableWrap : styles.chartTableWrap
+  const chartTotalHeight = expanded ? 400 : MOCK_CHART_VARIANT2_TOTAL_HEIGHT
+
+  if (view === 'chart') {
+    return (
+      <div className={mainBlockClass}>
+        <div className={styles.chartSvgWrap} style={{ height: chartTotalHeight }}>
+          <MockChartVariant2 height={chartTotalHeight} />
+        </div>
+      </div>
+    )
+  }
+
+  const tablePanelId =
+    tableTab === 'apps' ? 'chart-table-panel-apps' : 'chart-table-panel-cohort'
+
+  return (
+    <div
+      id={tablePanelId}
+      role="tabpanel"
+      aria-labelledby={
+        tableTab === 'apps' ? 'chart-table-tab-apps' : 'chart-table-tab-cohort'
+      }
+      className={tableWrapClass}
+    >
+      {tableTab === 'apps' ? (
+        <table className={styles.chartTable}>
+          <thead>
+            <tr>
+              <th className={styles.chartTh}>이동 앱</th>
+              <th className={styles.chartTh}>이탈 비율</th>
+            </tr>
+          </thead>
+          <tbody>
+            {CHART2_APP_TABLE_ROWS.map((row) => (
+              <tr key={row.app}>
+                <td className={styles.chartTd}>{row.app}</td>
+                <td className={styles.chartTd}>{row.rate}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <table className={styles.chartTable}>
+          <thead>
+            <tr>
+              <th className={styles.chartTh}>연령대</th>
+              <th className={styles.chartTh}>남성 이탈 비율</th>
+              <th className={styles.chartTh}>여성 이탈 비율</th>
+              <th className={styles.chartTh}>주요 이동 앱</th>
+            </tr>
+          </thead>
+          <tbody>
+            {CHART2_COHORT_TABLE_ROWS.map((row) => (
+              <tr key={row.age}>
+                <td className={styles.chartTd}>{row.age}</td>
+                <td className={styles.chartTd}>{row.male}</td>
+                <td className={styles.chartTd}>{row.female}</td>
+                <td className={styles.chartTd}>{row.topApp}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  )
+}
+
+function ChartMockCard({
+  onImageSave,
+  onExcelDownload,
+  onExpand,
+}: {
+  onImageSave?: () => void
+  onExcelDownload?: () => void
+  onExpand?: (currentView: ChartPanelView) => void
+}) {
+  const [view, setView] = useState<ChartPanelView>('chart')
   return (
     <div className={styles.chartCard}>
       <div className={styles.chartCardUpper}>
@@ -969,117 +1343,87 @@ function ChartMockCard() {
             />
             <h3 className={styles.chartCardTitle}>{CHART_CARD_TITLE}</h3>
           </div>
-          <div className={styles.chartToggleTrack} role="group" aria-label="차트 보기 형식">
-            <button
-              type="button"
-              className={
-                view === 'chart' ? styles.chartTogglePillActive : styles.chartTogglePill
-              }
-              aria-pressed={view === 'chart'}
-              aria-label="차트"
-              onClick={() => setView('chart')}
-            >
-              <span className={styles.chartToggleIconShell}>
-                <span
-                  className={`${styles.chartToggleGlyph} ${styles.chartToggleGlyphChart} ${
-                    view === 'chart'
-                      ? styles.chartToggleGlyphOn
-                      : styles.chartToggleGlyphOff
-                  }`}
-                  aria-hidden
-                />
-              </span>
-            </button>
-            <button
-              type="button"
-              className={
-                view === 'table' ? styles.chartTogglePillActive : styles.chartTogglePill
-              }
-              aria-pressed={view === 'table'}
-              aria-label="표"
-              onClick={() => setView('table')}
-            >
-              <span className={styles.chartToggleIconShell}>
-                <span
-                  className={`${styles.chartToggleGlyph} ${styles.chartToggleGlyphTable} ${
-                    view === 'table'
-                      ? styles.chartToggleGlyphOn
-                      : styles.chartToggleGlyphOff
-                  }`}
-                  aria-hidden
-                />
-              </span>
-            </button>
-          </div>
+          <ChartViewToggle view={view} onViewChange={setView} />
         </div>
-        <div className={styles.chartMainBlock}>
-          {view === 'chart' ? (
-            <div className={styles.chartViewStack}>
-              <div className={styles.chartSvgWrap}>
-                <MockComboRechartsChart
-                  className={styles.chartSvgFill}
-                  labels={CHART_MONTH_LABELS}
-                  barValues={CHART_BAR_SERIES}
-                  lineValues={CHART_LINE_SERIES}
-                />
-              </div>
-              <div className={styles.chartLegend}>
-                <span className={styles.chartLegendItem}>
-                  <span
-                    className={`${styles.chartLegendDot} ${styles.chartLegendDotLine}`}
-                    aria-hidden
-                  />
-                  사용자 수 (MAU)
-                </span>
-                <span className={styles.chartLegendItem}>
-                  <span
-                    className={`${styles.chartLegendDot} ${styles.chartLegendDotBar}`}
-                    aria-hidden
-                  />
-                  신규 설치 건 수
-                </span>
-              </div>
-            </div>
-          ) : (
-            <div className={styles.chartTableWrap}>
-              <table className={styles.chartTable}>
-                <thead>
-                  <tr>
-                    <th className={styles.chartTh}>날짜</th>
-                    <th className={styles.chartTh}>월간 사용자 수 (MAU)</th>
-                    <th className={styles.chartTh}>신규 설치 건 수</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {CHART_MONTH_LABELS.map((m, i) => (
-                    <tr key={m}>
-                      <td className={styles.chartTd}>{m}</td>
-                      <td className={styles.chartTd}>
-                        {CHART_LINE_SERIES[i]?.toLocaleString('ko-KR')}명
-                      </td>
-                      <td className={styles.chartTd}>
-                        {CHART_BAR_SERIES[i]?.toLocaleString('ko-KR')}건
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        <ChartPanelBody view={view} variant="card" />
       </div>
       <div className={styles.chartCardFooter}>
-        <button type="button" className={styles.chartFooterAction}>
+        <button type="button" className={styles.chartFooterAction} onClick={onImageSave}>
           <img src={icoDownload} alt="" className={styles.chartFooterIcon} />
           <span>이미지 저장</span>
         </button>
         <span className={styles.chartFooterDivider} aria-hidden />
-        <button type="button" className={styles.chartFooterAction}>
+        <button type="button" className={styles.chartFooterAction} onClick={onExcelDownload}>
           <img src={icoExcel} alt="" className={styles.chartFooterIcon} />
           <span>엑셀 다운로드</span>
         </button>
         <span className={styles.chartFooterDivider} aria-hidden />
-        <button type="button" className={styles.chartFooterAction}>
+        <button
+          type="button"
+          className={styles.chartFooterAction}
+          onClick={() => onExpand?.(view)}
+        >
+          <img src={icoExpand} alt="" className={styles.chartFooterIcon} />
+          <span>확장 보기</span>
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function ChartMockCard2({
+  onImageSave,
+  onExcelDownload,
+  onExpand,
+}: {
+  onImageSave?: () => void
+  onExcelDownload?: () => void
+  onExpand?: (currentView: ChartPanelView, tableTab: ChartTableTab) => void
+}) {
+  const [view, setView] = useState<ChartPanelView>('chart')
+  const [tableTab, setTableTab] = useState<ChartTableTab>('apps')
+
+  return (
+    <div className={styles.chartCard}>
+      <div className={styles.chartCardUpper}>
+        <div className={styles.chartCardHeader}>
+          <div className={styles.chartCardTitleWrap}>
+            <img
+              src={imgAppicon2}
+              alt=""
+              width={20}
+              height={20}
+              className={styles.chartCardAppIcon}
+            />
+            <h3 className={styles.chartCardTitle}>{CHART2_CARD_TITLE}</h3>
+          </div>
+          <ChartViewToggle view={view} onViewChange={setView} />
+        </div>
+        {view === 'chart' ? (
+          <ChartPanelBody2 view="chart" tableTab={tableTab} variant="card" />
+        ) : (
+          <div className={`${styles.chartMainBlock} ${styles.chartMainBlockTable}`}>
+            <ChartTableTabToggle tab={tableTab} onTabChange={setTableTab} />
+            <ChartPanelBody2 view="table" tableTab={tableTab} variant="card" />
+          </div>
+        )}
+      </div>
+      <div className={styles.chartCardFooter}>
+        <button type="button" className={styles.chartFooterAction} onClick={onImageSave}>
+          <img src={icoDownload} alt="" className={styles.chartFooterIcon} />
+          <span>이미지 저장</span>
+        </button>
+        <span className={styles.chartFooterDivider} aria-hidden />
+        <button type="button" className={styles.chartFooterAction} onClick={onExcelDownload}>
+          <img src={icoExcel} alt="" className={styles.chartFooterIcon} />
+          <span>엑셀 다운로드</span>
+        </button>
+        <span className={styles.chartFooterDivider} aria-hidden />
+        <button
+          type="button"
+          className={styles.chartFooterAction}
+          onClick={() => onExpand?.(view, tableTab)}
+        >
           <img src={icoExpand} alt="" className={styles.chartFooterIcon} />
           <span>확장 보기</span>
         </button>
@@ -1112,7 +1456,18 @@ export default function LandingPage() {
   const [feedbackReasons, setFeedbackReasons] = useState<Record<string, boolean>>({})
   const [feedbackComment, setFeedbackComment] = useState('')
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [isDownloading, setIsDownloading] = useState(false)
+  const [isChartExpanded, setIsChartExpanded] = useState(false)
+  const [expandedChartView, setExpandedChartView] = useState<ChartPanelView>('chart')
+  const [expandedChartVariant, setExpandedChartVariant] = useState<ChartMockVariant>('combo')
+  const [expandedTableTab, setExpandedTableTab] = useState<ChartTableTab>('apps')
+  const [modalPortalTarget, setModalPortalTarget] = useState<HTMLElement | null>(null)
   const toastTimerRef = useRef<number | null>(null)
+  const downloadTimerRef = useRef<number | null>(null)
+
+  useLayoutEffect(() => {
+    setModalPortalTarget(document.getElementById(APP_MODAL_ROOT_ID))
+  }, [])
 
   const showFeedbackToast = useCallback((msg: string) => {
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
@@ -1126,8 +1481,65 @@ export default function LandingPage() {
   useEffect(() => {
     return () => {
       if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
+      if (downloadTimerRef.current) window.clearTimeout(downloadTimerRef.current)
     }
   }, [])
+
+  const runDownloadAction = useCallback(
+    (toastText: string) => {
+      if (downloadTimerRef.current) window.clearTimeout(downloadTimerRef.current)
+      setIsDownloading(true)
+      downloadTimerRef.current = window.setTimeout(() => {
+        setIsDownloading(false)
+        downloadTimerRef.current = null
+        showFeedbackToast(toastText)
+      }, 2000)
+    },
+    [showFeedbackToast],
+  )
+
+  const handleChartImageSave = useCallback(() => {
+    runDownloadAction('차트 이미지가 저장되었습니다.')
+  }, [runDownloadAction])
+
+  const handleChartExcelDownload = useCallback(() => {
+    runDownloadAction('엑셀 파일이 다운로드되었습니다.')
+  }, [runDownloadAction])
+
+  const handleChartExpandImageSave = useCallback(() => {
+    runDownloadAction('차트 이미지가 저장되었습니다.')
+  }, [runDownloadAction])
+
+  const handleChartExpandExcelDownload = useCallback(() => {
+    runDownloadAction('엑셀 파일이 다운로드되었습니다.')
+  }, [runDownloadAction])
+
+  const openChartExpand = useCallback(
+    (
+      currentView: ChartPanelView,
+      variant: ChartMockVariant = 'combo',
+      tableTab: ChartTableTab = 'apps',
+    ) => {
+      setExpandedChartView(currentView)
+      setExpandedChartVariant(variant)
+      setExpandedTableTab(tableTab)
+      setIsChartExpanded(true)
+    },
+    [],
+  )
+
+  const closeChartExpand = useCallback(() => {
+    setIsChartExpanded(false)
+  }, [])
+
+  useEffect(() => {
+    if (!isChartExpanded) return
+    const onKeyDown = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'Escape') closeChartExpand()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [isChartExpanded, closeChartExpand])
 
   const openFeedbackChoice = useCallback((lineId: string) => {
     setFeedbackByLine((prev) => ({ ...prev, [lineId]: 'choosing' }))
@@ -1275,6 +1687,12 @@ export default function LandingPage() {
       } else if (payload.kind === 'chart') {
         const intro = payload.intro
         const isDeep = payload.depth === 'deep'
+        const isChurn = payload.variant === 'churn'
+        const indicatorPlain = isChurn ? CHART2_INDICATOR_PLAIN : CHART_INDICATOR_PLAIN
+        const causePlain = isChurn ? CHART2_CAUSE_PLAIN : CHART_CAUSE_PLAIN
+        const forecastPlain = isChurn ? CHART2_FORECAST_PLAIN : CHART_DEEP_FORECAST_PLAIN
+        const insight1Plain = isChurn ? CHART2_INSIGHT1_PLAIN : CHART_INSIGHT_ITEM1_PLAIN
+        const insight2Plain = isChurn ? CHART2_INSIGHT2_PLAIN : CHART_INSIGHT_ITEM2_PLAIN
         await streamTextByWords(intro, ac.signal, (slice) => {
           const introDone = slice.length >= intro.length
           setThread((prev) => {
@@ -1286,6 +1704,7 @@ export default function LandingPage() {
                 content: slice,
                 replyKind: 'chart',
                 chartDepth: payload.depth,
+                chartMockVariant: payload.variant,
                 chartVisible: introDone,
                 chartSectionsReady: false,
                 chartIndicatorText: '',
@@ -1308,7 +1727,7 @@ export default function LandingPage() {
           }
           return next
         })
-        await streamTextByWords(CHART_INDICATOR_PLAIN, ac.signal, (slice) => {
+        await streamTextByWords(indicatorPlain, ac.signal, (slice) => {
           setThread((prev) => {
             const next = [...prev]
             const last = next[next.length - 1]
@@ -1319,7 +1738,7 @@ export default function LandingPage() {
           })
         })
         if (isDeep) {
-          await streamTextByWords(CHART_CAUSE_PLAIN, ac.signal, (slice) => {
+          await streamTextByWords(causePlain, ac.signal, (slice) => {
             setThread((prev) => {
               const next = [...prev]
               const last = next[next.length - 1]
@@ -1329,7 +1748,7 @@ export default function LandingPage() {
               return next
             })
           })
-          await streamTextByWords(CHART_DEEP_FORECAST_PLAIN, ac.signal, (slice) => {
+          await streamTextByWords(forecastPlain, ac.signal, (slice) => {
             setThread((prev) => {
               const next = [...prev]
               const last = next[next.length - 1]
@@ -1339,7 +1758,7 @@ export default function LandingPage() {
               return next
             })
           })
-          await streamTextByWords(CHART_INSIGHT_ITEM1_PLAIN, ac.signal, (slice) => {
+          await streamTextByWords(insight1Plain, ac.signal, (slice) => {
             setThread((prev) => {
               const next = [...prev]
               const last = next[next.length - 1]
@@ -1349,7 +1768,7 @@ export default function LandingPage() {
               return next
             })
           })
-          await streamTextByWords(CHART_INSIGHT_ITEM2_PLAIN, ac.signal, (slice) => {
+          await streamTextByWords(insight2Plain, ac.signal, (slice) => {
             setThread((prev) => {
               const next = [...prev]
               const last = next[next.length - 1]
@@ -1400,7 +1819,7 @@ export default function LandingPage() {
     setMessage('')
 
     const questionDepth = options?.questionDepth ?? 1
-    const payload = buildStreamPayload(question, answerMode)
+    const payload = buildStreamPayload(question, answerMode, thread)
     const userLine: ChatLine = {
       id: newId(),
       role: 'user',
@@ -1418,7 +1837,9 @@ export default function LandingPage() {
           : payload.kind === 'text'
             ? 'text'
             : 'unavailable',
-      ...(payload.kind === 'chart' ? { chartDepth: payload.depth } : {}),
+      ...(payload.kind === 'chart'
+        ? { chartDepth: payload.depth, chartMockVariant: payload.variant }
+        : {}),
       ...(payload.kind === 'text' ? { mockCategory: payload.mockCategory } : {}),
     }
 
@@ -1483,7 +1904,7 @@ export default function LandingPage() {
     if (last.role !== 'assistant') return
     const prevUser = prev[prev.length - 2]
     if (prevUser.role !== 'user') return
-    const payload = buildStreamPayload(prevUser.content, answerMode)
+    const payload = buildStreamPayload(prevUser.content, answerMode, prev.slice(0, -1))
     const next: ChatLine[] = [
       ...prev.slice(0, -1),
       {
@@ -1502,7 +1923,9 @@ export default function LandingPage() {
         chartForecastText: undefined,
         chartInsight1Text: undefined,
         chartInsight2Text: undefined,
-        ...(payload.kind === 'chart' ? { chartDepth: payload.depth } : {}),
+        ...(payload.kind === 'chart'
+          ? { chartDepth: payload.depth, chartMockVariant: payload.variant }
+          : {}),
         ...(payload.kind === 'text' ? { mockCategory: payload.mockCategory } : {}),
       },
     ]
@@ -1564,7 +1987,11 @@ export default function LandingPage() {
       : 'MI AI Agent에게 무엇이든 물어보세요.'
 
   return (
-    <Layout onResetToHome={handleResetToHome}>
+    <Layout
+      onResetToHome={handleResetToHome}
+      onShowToast={showFeedbackToast}
+      currentThreadTitle={headerQuestionText}
+    >
       <div className={styles.chatMainColumn}>
         <div className={styles.chatMainPadded}>
               {showChatHeader ? (
@@ -1707,17 +2134,32 @@ export default function LandingPage() {
 
                 const chartSectionsReady = Boolean(assistantLine.chartSectionsReady)
 
+                const chartMockVariant = assistantLine.chartMockVariant ?? 'combo'
+                const isChurnChart = chartMockVariant === 'churn'
                 const isDeepChart = assistantLine.chartDepth === 'deep'
                 const chartInd = assistantLine.chartIndicatorText ?? ''
                 const chartCause = assistantLine.chartCauseText ?? ''
                 const chartFore = assistantLine.chartForecastText ?? ''
                 const chartIns1 = assistantLine.chartInsight1Text ?? ''
                 const chartIns2 = assistantLine.chartInsight2Text ?? ''
-                const chartIndComplete = isTypedComplete(chartInd, CHART_INDICATOR_PLAIN)
-                const chartCauseComplete = isTypedComplete(chartCause, CHART_CAUSE_PLAIN)
-                const chartForeComplete = isTypedComplete(chartFore, CHART_DEEP_FORECAST_PLAIN)
-                const chartIns1Complete = isTypedComplete(chartIns1, CHART_INSIGHT_ITEM1_PLAIN)
-                const chartIns2Complete = isTypedComplete(chartIns2, CHART_INSIGHT_ITEM2_PLAIN)
+                const chartIndicatorPlain = isChurnChart
+                  ? CHART2_INDICATOR_PLAIN
+                  : CHART_INDICATOR_PLAIN
+                const chartCausePlain = isChurnChart ? CHART2_CAUSE_PLAIN : CHART_CAUSE_PLAIN
+                const chartForecastPlain = isChurnChart
+                  ? CHART2_FORECAST_PLAIN
+                  : CHART_DEEP_FORECAST_PLAIN
+                const chartInsight1Plain = isChurnChart
+                  ? CHART2_INSIGHT1_PLAIN
+                  : CHART_INSIGHT_ITEM1_PLAIN
+                const chartInsight2Plain = isChurnChart
+                  ? CHART2_INSIGHT2_PLAIN
+                  : CHART_INSIGHT_ITEM2_PLAIN
+                const chartIndComplete = isTypedComplete(chartInd, chartIndicatorPlain)
+                const chartCauseComplete = isTypedComplete(chartCause, chartCausePlain)
+                const chartForeComplete = isTypedComplete(chartFore, chartForecastPlain)
+                const chartIns1Complete = isTypedComplete(chartIns1, chartInsight1Plain)
+                const chartIns2Complete = isTypedComplete(chartIns2, chartInsight2Plain)
                 const chartReplyComplete =
                   assistantLine.replyKind !== 'chart' ||
                   (Boolean(assistantLine.chartVisible) &&
@@ -1758,20 +2200,40 @@ export default function LandingPage() {
                             <div className={styles.chartIntroRich}>
                               {splitAnswerWithKeywords(
                                 assistantLine.content,
-                                isDeepChart
-                                  ? CHART_DEEP_INTRO_HIGHLIGHTS
-                                  : CHART_INTRO_HIGHLIGHTS,
+                                isChurnChart
+                                  ? isDeepChart
+                                    ? CHART2_DEEP_INTRO_HIGHLIGHTS
+                                    : CHART2_INTRO_HIGHLIGHTS
+                                  : isDeepChart
+                                    ? CHART_DEEP_INTRO_HIGHLIGHTS
+                                    : CHART_INTRO_HIGHLIGHTS,
                               )}
                             </div>
                           ) : null}
-                          {showChartCard ? <ChartMockCard /> : null}
+                          {showChartCard ? (
+                            isChurnChart ? (
+                              <ChartMockCard2
+                                onImageSave={handleChartImageSave}
+                                onExcelDownload={handleChartExcelDownload}
+                                onExpand={(view, tab) =>
+                                  openChartExpand(view, 'churn', tab)
+                                }
+                              />
+                            ) : (
+                              <ChartMockCard
+                                onImageSave={handleChartImageSave}
+                                onExcelDownload={handleChartExcelDownload}
+                                onExpand={(view) => openChartExpand(view, 'combo')}
+                              />
+                            )
+                          ) : null}
                           {chartSectionsReady ? (
                             <>
                               <div className={styles.answerSectionBlock}>
                                 <h4 className={styles.answerSectionTitle}>📊 지표 설명</h4>
                                 {chartIndComplete ? (
                                   <div className={styles.answerSectionBody}>
-                                    {CHART_INDICATOR_BODY}
+                                    {isChurnChart ? CHART2_INDICATOR_BODY : CHART_INDICATOR_BODY}
                                   </div>
                                 ) : (
                                   <p className={styles.answerSectionBody}>{chartInd}</p>
@@ -1782,7 +2244,7 @@ export default function LandingPage() {
                                   <h4 className={styles.answerSectionTitle}>🔍 원인 분석</h4>
                                   {chartCauseComplete ? (
                                     <div className={styles.answerSectionBody}>
-                                      {CHART_CAUSE_BODY}
+                                      {isChurnChart ? CHART2_CAUSE_BODY : CHART_CAUSE_BODY}
                                     </div>
                                   ) : (
                                     <p className={styles.answerSectionBody}>{chartCause}</p>
@@ -1794,7 +2256,9 @@ export default function LandingPage() {
                                   <h4 className={styles.answerSectionTitle}>📌 향후 예측</h4>
                                   {chartForeComplete ? (
                                     <div className={styles.answerSectionBody}>
-                                      {CHART_DEEP_FORECAST_BODY}
+                                      {isChurnChart
+                                        ? CHART2_FORECAST_BODY
+                                        : CHART_DEEP_FORECAST_BODY}
                                     </div>
                                   ) : (
                                     <p className={styles.answerSectionBody}>{chartFore}</p>
@@ -1820,7 +2284,7 @@ export default function LandingPage() {
                                               ✓
                                             </span>
                                             <span className={styles.chartInsightText}>
-                                              {CHART_INSIGHT_ITEM1_PLAIN}
+                                              {chartInsight1Plain}
                                             </span>
                                           </>
                                         ) : chartIns1 ? (
@@ -1840,7 +2304,7 @@ export default function LandingPage() {
                                                 ✓
                                               </span>
                                               <span className={styles.chartInsightText}>
-                                                {CHART_INSIGHT_ITEM2_PLAIN}
+                                                {chartInsight2Plain}
                                               </span>
                                             </>
                                           ) : chartIns2 ? (
@@ -2062,22 +2526,6 @@ export default function LandingPage() {
             )}
               </div>
             <div className={styles.composerWrap}>
-              {toastMessage ? (
-            <div
-              className={styles.feedbackToast}
-              role="status"
-              aria-live="polite"
-            >
-              <img
-                src={icoCheck}
-                alt=""
-                width={20}
-                height={20}
-                className={styles.feedbackToastIcon}
-              />
-              <span className={styles.feedbackToastText}>{toastMessage}</span>
-            </div>
-          ) : null}
           <div
             ref={composerRef}
             className={
@@ -2380,6 +2828,130 @@ export default function LandingPage() {
               </button>
             </div>
           </div>
+        </div>
+      ) : null}
+      {isChartExpanded && modalPortalTarget
+        ? createPortal(
+            <div
+              className={styles.chartExpandOverlay}
+              role="presentation"
+              onClick={closeChartExpand}
+            >
+              <div
+                className={styles.chartExpandWrapper}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  className={styles.chartExpandCloseBtn}
+                  aria-label="닫기"
+                  onClick={closeChartExpand}
+                >
+                  <img
+                    src={icoModalClose}
+                    alt=""
+                    width={40}
+                    height={40}
+                    className={styles.chartExpandCloseIcon}
+                  />
+                </button>
+                <div
+                  className={styles.chartExpandModal}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="chart-expand-title"
+                >
+                  <div className={styles.chartExpandModalUpper}>
+                    <div className={styles.chartExpandModalHeader}>
+                      <div className={styles.chartCardTitleWrap}>
+                        <img
+                          src={
+                            expandedChartVariant === 'churn' ? imgAppicon2 : imgAppicon
+                          }
+                          alt=""
+                          width={20}
+                          height={20}
+                          className={styles.chartCardAppIcon}
+                        />
+                        <h3 id="chart-expand-title" className={styles.chartCardTitle}>
+                          {expandedChartVariant === 'churn'
+                            ? CHART2_CARD_TITLE
+                            : CHART_CARD_TITLE}
+                        </h3>
+                      </div>
+                      <ChartViewToggle
+                        view={expandedChartView}
+                        onViewChange={setExpandedChartView}
+                      />
+                    </div>
+                    {expandedChartVariant === 'churn' ? (
+                      expandedChartView === 'chart' ? (
+                        <ChartPanelBody2
+                          view="chart"
+                          tableTab={expandedTableTab}
+                          variant="expanded"
+                        />
+                      ) : (
+                        <div
+                          className={`${styles.chartExpandMainBlock} ${styles.chartMainBlockTable}`}
+                        >
+                          <ChartTableTabToggle
+                            tab={expandedTableTab}
+                            onTabChange={setExpandedTableTab}
+                          />
+                          <ChartPanelBody2
+                            view="table"
+                            tableTab={expandedTableTab}
+                            variant="expanded"
+                          />
+                        </div>
+                      )
+                    ) : (
+                      <ChartPanelBody view={expandedChartView} variant="expanded" />
+                    )}
+                  </div>
+                  <div className={styles.chartExpandFooterWrap}>
+                    <div className={styles.chartCardFooter}>
+                      <button
+                        type="button"
+                        className={styles.chartFooterAction}
+                        onClick={handleChartExpandImageSave}
+                      >
+                        <img src={icoDownload} alt="" className={styles.chartFooterIcon} />
+                        <span>이미지 저장</span>
+                      </button>
+                      <span className={styles.chartFooterDivider} aria-hidden />
+                      <button
+                        type="button"
+                        className={styles.chartFooterAction}
+                        onClick={handleChartExpandExcelDownload}
+                      >
+                        <img src={icoExcel} alt="" className={styles.chartFooterIcon} />
+                        <span>엑셀 다운로드</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>,
+            modalPortalTarget,
+          )
+        : null}
+      {toastMessage ? (
+        <div className={styles.feedbackToast} role="status" aria-live="polite">
+          <img
+            src={icoCheck}
+            alt=""
+            width={20}
+            height={20}
+            className={styles.feedbackToastIcon}
+          />
+          <span className={styles.feedbackToastText}>{toastMessage}</span>
+        </div>
+      ) : null}
+      {isDownloading ? (
+        <div className={styles.downloadOverlay} role="status" aria-live="polite">
+          <div className={styles.downloadSpinner} aria-hidden />
         </div>
       ) : null}
     </Layout>

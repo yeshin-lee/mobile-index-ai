@@ -126,10 +126,13 @@
   flex-direction: row;
   align-items: stretch;
   min-height: 0;
+  position: relative;
   box-sizing: border-box;
 }
 
 .mainLane {
+  position: relative;
+  z-index: 1;
   flex: 1;
   min-width: 0;
   display: flex;
@@ -152,6 +155,8 @@
 }
 
 .iconRail {
+  position: relative;
+  z-index: 2;
   width: 90px;
   flex-shrink: 0;
   display: flex;
@@ -281,6 +286,8 @@
 }
 
 .chatPanel {
+  position: relative;
+  z-index: 2;
   width: 280px;
   flex-shrink: 0;
   display: flex;
@@ -291,6 +298,7 @@
   border: none;
   box-sizing: border-box;
   min-height: 0;
+  overflow: visible;
 }
 
 .agentTitleBtn {
@@ -328,6 +336,7 @@
   gap: 10px;
   align-items: stretch;
   min-height: 0;
+  overflow: visible;
 }
 
 .newChat {
@@ -375,6 +384,7 @@
   flex-direction: column;
   min-height: 0;
   width: 100%;
+  overflow: visible;
 }
 
 .historyTitle {
@@ -394,51 +404,95 @@
 
 .historyScroll {
   flex: 1;
-  overflow: auto;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
 }
 
-.historyItem {
+.historyScrollEmpty {
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.historyEmpty {
+  margin: 0;
+  padding: 0 10px;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--gray-500);
+  text-align: center;
+}
+
+.historyScroll:has(.historyItemWrapMenuOpen) {
+  overflow: visible;
+}
+
+.history:has(.historyItemWrapMenuOpen) {
+  overflow: visible;
+}
+
+.chatList:has(.historyItemWrapMenuOpen) {
+  overflow: visible;
+}
+
+/* Figma thread item (`24348:12403`) + more menu (`24357:21867`) */
+.historyItemWrap {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 10px;
-  border-radius: 6px;
-  border: none;
-  background: transparent;
-  color: var(--gray-300);
-  cursor: pointer;
-  font: inherit;
-  font-size: 14px;
-  text-align: left;
   width: 100%;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 6px;
   box-sizing: border-box;
 }
 
-.historyItem:hover {
-  background: rgba(60, 60, 67, 0.5);
+.historyItemWrap:hover {
+  background: var(--gray-750);
+}
+
+.historyItemWrapActive {
+  background: var(--gray-750);
+}
+
+.historyItem,
+.historyItemActive {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: left;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+.historyItem {
+  color: var(--gray-300);
 }
 
 .historyItemActive {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 10px;
-  border-radius: 6px;
-  border: none;
-  background: var(--gray-750);
   color: var(--white);
-  cursor: pointer;
-  font: inherit;
-  font-size: 14px;
-  text-align: left;
-  width: 100%;
-  box-sizing: border-box;
 }
 
-.historyItemActive:hover {
-  background: var(--gray-750);
+.historyItemMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
 .historyItemText {
@@ -447,22 +501,153 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 400;
 }
 
 .pin {
   flex-shrink: 0;
-  color: var(--primary-300);
   display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
 }
 
-.moreIcon {
+.pinIcon {
+  display: block;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  background-color: var(--primary-300);
+  -webkit-mask-image: url('../assets/ico_pin.svg');
+  mask-image: url('../assets/ico_pin.svg');
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+.historyItemMenuWrap {
+  position: relative;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  color: var(--gray-400);
+  width: 0;
+  height: 20px;
+  overflow: visible;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    width 0.15s ease,
+    opacity 0.15s ease,
+    visibility 0.15s ease;
+}
+
+.historyItemWrap:hover .historyItemMenuWrap,
+.historyItemWrap:focus-within .historyItemMenuWrap,
+.historyItemWrapMenuOpen .historyItemMenuWrap {
+  width: 20px;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.moreBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.moreBtn:hover,
+.moreBtn[aria-expanded='true'] {
+  background: var(--gray-650);
+}
+
+.moreIconImg {
+  display: block;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* Figma history dropdown (`24357:21867`) — bookmark/answer 패널과 동일 톤, width 140px */
+.historyDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 100;
+  width: 140px;
+  min-width: 140px;
+  max-width: 140px;
+  padding: 8px 0;
+  border-radius: 8px;
+  background: var(--gray-750);
+  border: 1px solid var(--gray-600);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  box-sizing: border-box;
+}
+
+.historyMenuRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--white);
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.historyMenuRow:hover {
+  background: var(--gray-650);
+}
+
+.historyMenuRow:focus-visible {
+  outline: 2px solid var(--primary-300);
+  outline-offset: -2px;
+}
+
+.historyMenuIconImg {
+  display: block;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.historyMenuLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.historyMenuDivider {
+  height: 1px;
+  margin: 4px 12px;
+  background: var(--gray-650);
+  flex-shrink: 0;
 }
 
 .main {
@@ -484,4 +669,11 @@
   min-width: 0;
   box-sizing: border-box;
   padding: 0;
+}
+
+.modalPortalRoot {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  pointer-events: none;
 }

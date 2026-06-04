@@ -1,4 +1,12 @@
-import type { ReactNode } from 'react'
+import {
+  Fragment,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import styles from './Layout.module.css'
 import miHomePng from '../assets/gnb/mi-home.png'
 import icoSnb01 from '../assets/ico_snb01.svg'
@@ -11,6 +19,11 @@ import icoSnb07 from '../assets/ico_snb07.svg'
 import icoSnb08 from '../assets/ico_snb08.svg'
 import icoSymbol from '../assets/ico_symbol.svg'
 import icoNewChat from '../assets/ico_newchat.svg'
+import icoMore from '../assets/ico_more.svg'
+import icoEdit from '../assets/ico_edit.svg'
+import icoPinMenu from '../assets/ico_pin.svg'
+import icoShare from '../assets/ico_share.svg'
+import icoDelete from '../assets/ico_delete.svg'
 
 const NAV_ITEMS: { id: string; label: string; icon: string; active?: boolean }[] = [
   { id: 'agent', label: 'MI AI Agent', icon: icoSnb01, active: true },
@@ -23,23 +36,66 @@ const NAV_ITEMS: { id: string; label: string; icon: string; active?: boolean }[]
   { id: 'product', label: '상품안내', icon: icoSnb08 },
 ]
 
-const HISTORY_ITEMS: {
+/** LandingPage 등 전역 모달 포털 마운트 — `.page` CSS 변수 상속, SNB 위 레이어 */
+export const APP_MODAL_ROOT_ID = 'app-modal-root'
+
+type HistoryItem = {
   id: string
   label: string
+  createdAt: number
   pinned?: boolean
   active?: boolean
-}[] = [
-  { id: '1', label: '모바일인덱스 INSIGHT 상품 체계', pinned: true },
+}
+
+function sortHistoryItems(items: HistoryItem[]): HistoryItem[] {
+  const pinned = items
+    .filter((item) => item.pinned)
+    .sort((a, b) => b.createdAt - a.createdAt)
+  const unpinned = items
+    .filter((item) => !item.pinned)
+    .sort((a, b) => b.createdAt - a.createdAt)
+  return [...pinned, ...unpinned]
+}
+
+type HistoryMenuAction = 'rename' | 'pin' | 'share' | 'delete'
+
+type HistoryMenuOption = {
+  action: HistoryMenuAction
+  label: string
+  icon: string
+  dividerBefore?: boolean
+}
+
+function getHistoryMenuOptions(item: HistoryItem): HistoryMenuOption[] {
+  return [
+    { action: 'rename', label: '이름 변경', icon: icoEdit },
+    {
+      action: 'pin',
+      label: item.pinned ? '고정 해제' : '대화 고정',
+      icon: icoPinMenu,
+    },
+    { action: 'share', label: '공유하기', icon: icoShare },
+    { action: 'delete', label: '삭제', icon: icoDelete, dividerBefore: true },
+  ]
+}
+
+const INITIAL_HISTORY_ITEMS: HistoryItem[] = [
+  {
+    id: '1',
+    label: '모바일인덱스 INSIGHT 상품 체계',
+    pinned: true,
+    createdAt: 1_700_000_000_000,
+  },
   {
     id: '2',
     label: '쿠팡과 11번가의 최근 1년간 MAU 추이 비교',
     pinned: true,
-    active: true,
+    createdAt: 1_700_000_864_000,
   },
-  { id: '3', label: '내 앱의 이탈 고객 분석', pinned: true },
-  { id: '4', label: '다음달 쿠팡이츠 사용자 수 순위 예측' },
-  { id: '5', label: '요즘 뜨는 업종 분석' },
-  { id: '6', label: '2025년 주간 쿠팡 사용자 수 추이 분석' },
+  { id: '3', label: '내 앱의 이탈 고객 분석', createdAt: 1_700_001_728_000 },
+  { id: '4', label: '다음달 쿠팡이츠 사용자 수 순위 예측', createdAt: 1_700_001_200_000 },
+  { id: '5', label: '요즘 뜨는 업종 분석', createdAt: 1_700_000_432_000 },
+  { id: '6', label: '2025년 주간 쿠팡 사용자 수 추이 분석', createdAt: 1_700_000_216_000 },
 ]
 
 function IconOpenInNew() {
@@ -58,33 +114,124 @@ function IconHistory() {
   )
 }
 
-function IconPin() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-    </svg>
-  )
-}
-
-function IconMore() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
-    </svg>
-  )
-}
-
 function RailNavIcon({ src }: { src: string }) {
   return <img src={src} alt="" width={30} height={30} className={styles.railIconImg} />
+}
+
+function HistoryMenuIcon({ src }: { src: string }) {
+  return (
+    <img
+      src={src}
+      alt=""
+      width={20}
+      height={20}
+      className={styles.historyMenuIconImg}
+      aria-hidden
+    />
+  )
 }
 
 export type LayoutProps = {
   children: ReactNode
   /** SNB 로고·새 대화 클릭 시 첫 진입 화면으로 리셋 */
   onResetToHome?: () => void
+  /** 현재 대화의 첫 user 질문 — 변경 시 SNB 히스토리에 스레드 추가 */
+  currentThreadTitle?: string
+  /** 히스토리 삭제 등 SNB 액션 토스트 */
+  onShowToast?: (message: string) => void
 }
 
-export default function Layout({ children, onResetToHome }: LayoutProps) {
+export default function Layout({
+  children,
+  onResetToHome,
+  currentThreadTitle,
+  onShowToast,
+}: LayoutProps) {
+  const [historyItems, setHistoryItems] = useState<HistoryItem[]>(INITIAL_HISTORY_ITEMS)
+  const sortedHistoryItems = useMemo(
+    () => sortHistoryItems(historyItems),
+    [historyItems],
+  )
+  const [openMenuItemId, setOpenMenuItemId] = useState<string | null>(null)
+  const prevThreadTitleRef = useRef<string | undefined>(undefined)
+
+  const handleHistoryMenuAction = useCallback(
+    (action: HistoryMenuAction, itemId: string) => {
+      if (action === 'pin') {
+        setHistoryItems((prev) => {
+          const now = Date.now()
+          const updated = prev.map((item) => {
+            if (item.id !== itemId) return item
+            if (item.pinned) {
+              return { ...item, pinned: false, createdAt: now }
+            }
+            return { ...item, pinned: true, createdAt: now }
+          })
+          return sortHistoryItems(updated)
+        })
+        setOpenMenuItemId(null)
+        return
+      }
+
+      if (action === 'delete') {
+        let wasActive = false
+        setHistoryItems((prev) => {
+          const target = prev.find((item) => item.id === itemId)
+          wasActive = Boolean(target?.active)
+          return prev.filter((item) => item.id !== itemId)
+        })
+        setOpenMenuItemId(null)
+        if (wasActive) {
+          prevThreadTitleRef.current = ''
+          onResetToHome?.()
+        }
+        onShowToast?.('히스토리가 삭제되었습니다.')
+        return
+      }
+
+      console.log(action, itemId)
+      setOpenMenuItemId(null)
+    },
+    [onResetToHome, onShowToast],
+  )
+
+  useEffect(() => {
+    if (!openMenuItemId) return
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as HTMLElement
+      if (target.closest('[data-history-menu-root]')) return
+      setOpenMenuItemId(null)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [openMenuItemId])
+
+  useEffect(() => {
+    const title = currentThreadTitle?.trim() ?? ''
+
+    if (!title) {
+      setHistoryItems((prev) =>
+        prev.map((item) => (item.active ? { ...item, active: false } : item)),
+      )
+      prevThreadTitleRef.current = title
+      return
+    }
+
+    if (prevThreadTitleRef.current === title) return
+
+    prevThreadTitleRef.current = title
+    setHistoryItems((prev) => [
+      ...prev.map((item) => ({ ...item, active: false })),
+      {
+        id: crypto.randomUUID(),
+        label: title,
+        pinned: false,
+        active: true,
+        createdAt: Date.now(),
+      },
+    ])
+  }, [currentThreadTitle])
+
   return (
     <div className={styles.page}>
       <header className={styles.topBar} role="banner">
@@ -178,28 +325,95 @@ export default function Layout({ children, onResetToHome }: LayoutProps) {
                 <IconHistory />
                 대화 히스토리
               </div>
-              <div className={styles.historyScroll}>
-                {HISTORY_ITEMS.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className={
-                      item.active ? styles.historyItemActive : styles.historyItem
-                    }
-                  >
-                    {item.pinned ? (
-                      <span className={styles.pin}>
-                        <IconPin />
-                      </span>
-                    ) : null}
-                    <span className={styles.historyItemText}>{item.label}</span>
-                    {item.active ? (
-                      <span className={styles.moreIcon} aria-hidden>
-                        <IconMore />
-                      </span>
-                    ) : null}
-                  </button>
-                ))}
+              <div
+                className={
+                  historyItems.length === 0
+                    ? `${styles.historyScroll} ${styles.historyScrollEmpty}`
+                    : styles.historyScroll
+                }
+              >
+                {historyItems.length === 0 ? (
+                  <p className={styles.historyEmpty}>대화 히스토리가 없습니다.</p>
+                ) : (
+                sortedHistoryItems.map((item) => {
+                  const menuOpen = openMenuItemId === item.id
+                  return (
+                    <div
+                      key={item.id}
+                      className={`${styles.historyItemWrap}${
+                        item.active ? ` ${styles.historyItemWrapActive}` : ''
+                      }${menuOpen ? ` ${styles.historyItemWrapMenuOpen}` : ''}`}
+                    >
+                      <button
+                        type="button"
+                        className={
+                          item.active ? styles.historyItemActive : styles.historyItem
+                        }
+                      >
+                        <span className={styles.historyItemMain}>
+                          {item.pinned ? (
+                            <span className={styles.pin} aria-hidden>
+                              <span className={styles.pinIcon} />
+                            </span>
+                          ) : null}
+                          <span className={styles.historyItemText}>{item.label}</span>
+                        </span>
+                      </button>
+                      <div className={styles.historyItemMenuWrap} data-history-menu-root>
+                        <button
+                          type="button"
+                          className={styles.moreBtn}
+                          aria-label="더보기 메뉴"
+                          aria-expanded={menuOpen}
+                          aria-haspopup="menu"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setOpenMenuItemId((prev) =>
+                              prev === item.id ? null : item.id,
+                            )
+                          }}
+                        >
+                          <img
+                            src={icoMore}
+                            alt=""
+                            width={20}
+                            height={20}
+                            className={styles.moreIconImg}
+                          />
+                        </button>
+                        {menuOpen ? (
+                          <div className={styles.historyDropdown} role="menu">
+                            {getHistoryMenuOptions(item).map((opt) => (
+                              <Fragment key={opt.action}>
+                                {opt.dividerBefore ? (
+                                  <div
+                                    className={styles.historyMenuDivider}
+                                    role="separator"
+                                  />
+                                ) : null}
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  className={styles.historyMenuRow}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleHistoryMenuAction(opt.action, item.id)
+                                  }}
+                                >
+                                  <HistoryMenuIcon src={opt.icon} />
+                                  <span className={styles.historyMenuLabel}>
+                                    {opt.label}
+                                  </span>
+                                </button>
+                              </Fragment>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  )
+                })
+                )}
               </div>
             </div>
           </div>
@@ -213,6 +427,7 @@ export default function Layout({ children, onResetToHome }: LayoutProps) {
           </div>
         </div>
       </div>
+      <div id={APP_MODAL_ROOT_ID} className={styles.modalPortalRoot} />
     </div>
   )
 }

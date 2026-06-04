@@ -47,13 +47,17 @@ export function TooltipWrap({
   useEffect(() => {
     if (!coords) return
     const reposition = () => updateCoords()
-    window.addEventListener('scroll', reposition, true)
     window.addEventListener('resize', reposition)
     return () => {
-      window.removeEventListener('scroll', reposition, true)
       window.removeEventListener('resize', reposition)
     }
   }, [coords, updateCoords])
+
+  useEffect(() => {
+    const handleScroll = () => hide()
+    window.addEventListener('scroll', handleScroll, true)
+    return () => window.removeEventListener('scroll', handleScroll, true)
+  }, [hide])
 
   useEffect(() => {
     if (disabled) hide()

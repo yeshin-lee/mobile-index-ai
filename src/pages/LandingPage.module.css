@@ -802,22 +802,20 @@
   filter: brightness(0) invert(1);
 }
 
-/* Figma toast (`24359:29170`) — composerWrap 상단 20px, 가로 중앙 */
+/* Figma toast — 화면 우측 상단 (GNB 32px + 12px) */
 .feedbackToast {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  z-index: 10;
+  position: fixed;
+  top: 44px;
+  right: 24px;
+  z-index: 1100;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  margin-bottom: 20px;
   padding: 12px 16px;
   border-radius: 8px;
   background: var(--gray-50);
   box-shadow: 0 8px 6px rgba(0, 0, 0, 0.16);
-  transform: translateX(-50%);
   pointer-events: none;
   max-width: min(480px, calc(100vw - 48px));
   box-sizing: border-box;
@@ -849,6 +847,25 @@
   padding: 24px;
   box-sizing: border-box;
   background: rgba(0, 0, 0, 0.8);
+}
+
+.downloadOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.downloadSpinner {
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  border: 4px solid rgba(255, 255, 255, 0.22);
+  border-top-color: #ffffff;
+  animation: downloadSpinnerSpin 0.9s linear infinite;
 }
 
 .feedbackModal {
@@ -1338,6 +1355,52 @@
   box-sizing: border-box;
 }
 
+.chartMainBlockTable {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.chartMainBlockTable .chartTableWrap {
+  flex: 1 1 0;
+  min-height: 0;
+  height: auto;
+}
+
+.chartTableTabBar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.chartTableTab,
+.chartTableTabActive {
+  padding: 4px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--gray-400);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.chartTableTab:hover {
+  color: var(--gray-200);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.chartTableTabActive {
+  color: var(--white);
+  background: var(--gray-650);
+}
+
 .chartViewStack {
   display: flex;
   flex-direction: column;
@@ -1623,6 +1686,150 @@
   margin: 0 2px;
   flex-shrink: 0;
   background: rgba(255, 255, 255, 0.12);
+}
+
+/* Figma 차트/테이블 확장보기 (`24355:19557`, `24355:20684`) */
+.chartExpandOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.8);
+  pointer-events: auto;
+}
+
+.chartExpandWrapper {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  width: calc(100% - 48px);
+  max-width: 1000px;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+}
+
+.chartExpandCloseBtn {
+  align-self: flex-end;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.chartExpandCloseBtn:hover {
+  opacity: 0.9;
+}
+
+.chartExpandCloseIcon {
+  display: block;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.chartExpandModal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border-radius: 12px;
+  background: var(--gray-750);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.chartExpandModalUpper {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.chartExpandModalHeader {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+  margin-bottom: 10px;
+}
+
+.chartExpandMainBlock {
+  width: 100%;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+/* 확장 모달 — 차트+범례 400px 고정, 차트가 남은 높이 채움 */
+.chartExpandViewStack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  width: 100%;
+  height: 400px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.chartExpandViewStack .chartLegend {
+  flex-shrink: 0;
+  height: 16px;
+  min-height: 16px;
+  max-height: 16px;
+}
+
+.chartExpandSvgWrap {
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  border: none;
+  outline: none;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+.chartExpandSvgFill {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.chartExpandTableWrap {
+  height: 400px;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  align-self: stretch;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid var(--gray-600);
+  border-radius: 6px;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.chartExpandFooterWrap {
+  flex-shrink: 0;
 }
 
 .answerSectionBlock {
@@ -2370,5 +2577,11 @@
   }
   100% {
     background-position: -100% 0;
+  }
+}
+
+@keyframes downloadSpinnerSpin {
+  to {
+    transform: rotate(360deg);
   }
 }
