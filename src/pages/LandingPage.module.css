@@ -1355,17 +1355,36 @@
   box-sizing: border-box;
 }
 
+.chartMainBlock.chartMainBlockTable {
+  height: 272px;
+}
+
 .chartMainBlockTable {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 8px;
+  min-height: 0;
 }
 
 .chartMainBlockTable .chartTableWrap {
-  flex: 1 1 0;
-  min-height: 0;
+  flex: 0 0 auto;
   height: auto;
+  max-height: 220px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid var(--gray-600);
+  border-radius: 6px;
+}
+
+.chartMainBlockTable .chartExpandTableWrap {
+  flex: 0 0 auto;
+  height: auto;
+  max-height: calc(400px - 44px - 8px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid var(--gray-600);
+  border-radius: 6px;
 }
 
 .chartTableTabBar {
@@ -1551,6 +1570,7 @@
 
 .chartTable {
   width: 100%;
+  height: auto;
   border-collapse: collapse;
   table-layout: fixed;
   color: var(--white);
@@ -1770,7 +1790,15 @@
 .chartExpandMainBlock {
   width: 100%;
   flex-shrink: 0;
+  min-height: 0;
   box-sizing: border-box;
+}
+
+.chartExpandMainBlock.chartMainBlockTable {
+  height: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 /* 확장 모달 — 차트+범례 400px 고정, 차트가 남은 높이 채움 */

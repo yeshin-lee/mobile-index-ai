@@ -150,6 +150,7 @@ export function MockChartVariant2({
                   paddingAngle={1}
                   stroke="transparent"
                   isAnimationActive
+                  animationBegin={0}
                   animationDuration={800}
                 >
                   {PIE_DATA.map((entry) => (

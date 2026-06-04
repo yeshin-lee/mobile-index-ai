@@ -845,7 +845,7 @@ const UNAVAILABLE_REPLY_TEXT =
   '저는 모바일 데이터 분석 전문 에이전트입니다. 앱 사용 현황, MAU, 신규 설치 등 모바일 데이터와 관련된 질문을 해주세요.\n예시) "쿠팡의 최근 1년간 MAU 추이를 분석해줘"'
 
 const CHART_REPLY_PATTERN =
-  /이탈률|신규\s*설치|사용자\s*수|사용\s*시간|데이터|\bMAU\b|추이|업종|시장|비교|분석/i
+  /이탈|신규\s*설치|사용자\s*수|사용\s*시간|데이터|\bMAU\b|추이|업종|시장|비교|분석/i
 
 const TEXT_REPLY_PATTERN =
   /서비스|설명|용어|모바일인덱스|\bINSIGHT\b|상품/i
@@ -971,7 +971,7 @@ function highlightTermsForCategory(category: TextMockCategory): readonly string[
   }
 }
 
-const TYPING_INTERVAL_MS = 30
+const TYPING_INTERVAL_MS = 15
 
 function sleep(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -1717,7 +1717,7 @@ export default function LandingPage() {
             return next
           })
         })
-        await sleep(CHART_COMBO_ANIMATION_MS, ac.signal)
+        await sleep(CHART_COMBO_ANIMATION_MS + 500, ac.signal)
         if (ac.signal.aborted) return
         setThread((prev) => {
           const next = [...prev]
