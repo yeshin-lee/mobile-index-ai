@@ -33,6 +33,7 @@ import icoExpand from '../assets/ico_expand.svg'
 import icoFeedback from '../assets/ico_feedback.svg'
 import icoHate from '../assets/ico_hate.svg'
 import icoLike from '../assets/ico_like.svg'
+import icoArrow from '../assets/ico_arrow.svg'
 import icoBranchLast from '../assets/ico_branch_last.svg'
 import icoBranchMiddle from '../assets/ico_branch_middle.svg'
 import icoClose from '../assets/ico_close.svg'
@@ -46,6 +47,8 @@ import icoSymbol from '../assets/ico_symbol.svg'
 import styles from './LandingPage.module.css'
 
 const TABS = ['현황 파악', '변화 추적', '원인 탐색', '향후 예측'] as const
+
+const CHAT_SCROLL_BOTTOM_THRESHOLD = 50
 
 const ANSWER_OPTIONS = [
   { mode: '기본 답변' as const, description: '데이터 요약 및 시각화 제공' },
@@ -848,7 +851,7 @@ const CHART_REPLY_PATTERN =
   /이탈|신규\s*설치|사용자\s*수|사용\s*시간|데이터|\bMAU\b|추이|업종|시장|비교|분석/i
 
 const TEXT_REPLY_PATTERN =
-  /서비스|설명|용어|모바일인덱스|\bINSIGHT\b|상품/i
+  /서비스|설명|용어|안내|모바일인덱스|\bINSIGHT\b|상품/i
 
 function classifyReplyKind(question: string): ReplyKind {
   const q = question.replace(/\s+/g, ' ').trim()
@@ -1446,6 +1449,8 @@ export default function LandingPage() {
   const [isThreadPanelOpen, setIsThreadPanelOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const composerRef = useRef<HTMLDivElement>(null)
+  const chatScrollRef = useRef<HTMLDivElement>(null)
+  const [showScrollDownBtn, setShowScrollDownBtn] = useState(false)
   const streamAbortRef = useRef<AbortController | null>(null)
   const threadRef = useRef<ChatLine[]>([])
 
@@ -1937,11 +1942,42 @@ export default function LandingPage() {
     threadRef.current = thread
   }, [thread])
 
+  const updateScrollDownVisible = useCallback(() => {
+    const container = chatScrollRef.current
+    if (!container) {
+      setShowScrollDownBtn(false)
+      return
+    }
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight
+    setShowScrollDownBtn(distanceFromBottom > CHAT_SCROLL_BOTTOM_THRESHOLD)
+  }, [])
+
+  const scrollChatToBottom = useCallback(() => {
+    const container = chatScrollRef.current
+    if (!container) return
+    container.scrollTop = container.scrollHeight
+  }, [])
+
+  useEffect(() => {
+    const container = chatScrollRef.current
+    if (!container || thread.length === 0) {
+      setShowScrollDownBtn(false)
+      return
+    }
+    updateScrollDownVisible()
+    container.addEventListener('scroll', updateScrollDownVisible, { passive: true })
+    const resizeObserver = new ResizeObserver(updateScrollDownVisible)
+    resizeObserver.observe(container)
+    return () => {
+      container.removeEventListener('scroll', updateScrollDownVisible)
+      resizeObserver.disconnect()
+    }
+  }, [thread.length, updateScrollDownVisible])
+
   useEffect(() => {
     if (!isSending) return
-    const container = document.querySelector(
-      '[class*="chat-scroll-container"]',
-    ) as HTMLElement | null
+    const container = chatScrollRef.current
     if (!container) return
     container.scrollTop = container.scrollHeight
   }, [thread, isSending])
@@ -1981,7 +2017,7 @@ export default function LandingPage() {
   }
 
   const composerPlaceholder = isSending
-    ? '답변을 생성하고 있습니다...'
+    ? '답변을 생성하고 있습니다'
     : hasConversation
       ? '관련해서 질문하기'
       : 'MI AI Agent에게 무엇이든 물어보세요.'
@@ -2021,7 +2057,7 @@ export default function LandingPage() {
               ) : null}
               <div className={styles.contentInner}>
             {hasConversation ? (
-              <div className={styles['chat-scroll-container']}>
+              <div ref={chatScrollRef} className={styles['chat-scroll-container']}>
                 <div
                   className={`${styles.mainContent} ${styles.mainContentChat} ${styles.chatStage}`}
                 >
@@ -2104,8 +2140,13 @@ export default function LandingPage() {
                         <div className={styles.loadingAnswerCol}>
                           <p className={styles.loadingGradientText}>
                             {loadingVariant === 'complex'
-                              ? '데이터를 분석하고 인사이트를 생성하고 있습니다...'
-                              : '답변을 생성하고 있습니다...'}
+                              ? '데이터를 분석하고 인사이트를 생성하고 있습니다'
+                              : '답변을 생성하고 있습니다'}
+                            <span className={styles.loadingDots} aria-hidden>
+                              <span>.</span>
+                              <span>.</span>
+                              <span>.</span>
+                            </span>
                           </p>
                           <div className={styles.loadingSkeletonCol} aria-hidden>
                             <div className={styles.loadingSkeletonBar} />
@@ -2526,6 +2567,22 @@ export default function LandingPage() {
             )}
               </div>
             <div className={styles.composerWrap}>
+              {hasConversation && showScrollDownBtn ? (
+                <button
+                  type="button"
+                  className={styles.scrollDownBtn}
+                  aria-label="맨 아래로 스크롤"
+                  onClick={scrollChatToBottom}
+                >
+                  <img
+                    src={icoArrow}
+                    alt=""
+                    width={20}
+                    height={20}
+                    className={styles.scrollDownBtnIcon}
+                  />
+                </button>
+              ) : null}
           <div
             ref={composerRef}
             className={

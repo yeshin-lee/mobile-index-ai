@@ -498,6 +498,32 @@
   color: transparent;
 }
 
+.loadingDots span {
+  animation: loadingDotBlink 1.4s infinite;
+  opacity: 0;
+  background: linear-gradient(
+    173.55deg,
+    #ffa7fb 24.24%,
+    #a4a1ff 76.4%,
+    #8bb8ff 95.15%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.loadingDots span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.loadingDots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loadingDots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
 .loadingSkeletonCol {
   display: flex;
   flex-direction: column;
@@ -511,16 +537,17 @@
   width: 100%;
   border-radius: 6px;
   background: linear-gradient(
-    -86.54deg,
-    #474750 9.91%,
-    #5e5e65 31.71%,
-    #474750 56.42%
+    90deg,
+    var(--gray-700) 25%,
+    var(--gray-650) 50%,
+    var(--gray-700) 75%
   );
-  background-size: 220% 100%;
-  animation: loadingSkeletonShimmer 1.35s ease-in-out infinite;
+  background-size: 200% 100%;
+  animation: loadingSkeletonShimmer 1.5s ease-in-out infinite;
 }
 
 .loadingSkeletonBar:nth-child(2) {
+  width: 85%;
   animation-delay: 0.12s;
 }
 
@@ -529,7 +556,7 @@
 }
 
 .loadingSkeletonBarShort {
-  max-width: 360px;
+  width: 60%;
 }
 
 .chatScrollAnchor {
@@ -2183,14 +2210,55 @@
 .composerWrap {
   position: relative;
   flex-shrink: 0;
-  padding: 16px 0 28px;
+  padding: 24px 0 28px;
   display: flex;
   justify-content: center;
   width: 100%;
   max-width: 900px;
   margin: 0 auto;
   box-sizing: border-box;
-  background: linear-gradient(to top, var(--gray-800) 75%, transparent);
+}
+
+.composerWrap::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: 40px;
+  background: linear-gradient(to bottom, transparent, rgba(48, 48, 54, 0.9));
+  pointer-events: none;
+  z-index: 2;
+}
+
+.scrollDownBtn {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--gray-600);
+  border-radius: 50%;
+  background: var(--gray-700);
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.scrollDownBtn:hover {
+  background: var(--gray-650);
+}
+
+.scrollDownBtnIcon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
 }
 
 .searchBox {
@@ -2601,10 +2669,21 @@
 
 @keyframes loadingSkeletonShimmer {
   0% {
-    background-position: 100% 0;
+    background-position: 200% 0;
   }
   100% {
-    background-position: -100% 0;
+    background-position: -200% 0;
+  }
+}
+
+@keyframes loadingDotBlink {
+  0%,
+  80%,
+  100% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
   }
 }
 
