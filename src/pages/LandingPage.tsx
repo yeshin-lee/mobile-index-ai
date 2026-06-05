@@ -2014,6 +2014,14 @@ export default function LandingPage() {
     }
   }, [favoriteQuestions.length, openMenu])
 
+  useEffect(() => {
+    if (thread.length > 0 || isSending) return
+    const frame = requestAnimationFrame(() => {
+      textareaRef.current?.focus()
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [thread.length, isSending])
+
   useEffect(
     () => () => {
       streamAbortRef.current?.abort()
