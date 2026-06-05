@@ -939,7 +939,7 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   width: 100%;
 }
 
@@ -951,7 +951,7 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 8px;
+  column-gap: 8px;
   min-height: 26px;
   cursor: pointer;
 }
@@ -1608,12 +1608,14 @@
 .chartTh,
 .chartTd {
   text-align: left;
-  border-right: 1px solid var(--gray-650);
   border-bottom: 1px solid var(--gray-650);
   word-break: break-word;
 }
 
-.chartTh:last-child,
+.chartTd {
+  border-right: 1px solid var(--gray-650);
+}
+
 .chartTd:last-child {
   border-right: none;
 }
@@ -1628,7 +1630,17 @@
   font-size: 14px;
   font-weight: 500;
   line-height: 1.5;
-  border-right-color: var(--gray-600);
+  border-right: none;
+}
+
+.chartTh:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--gray-600);
 }
 
 .chartTd {
@@ -2415,22 +2427,11 @@
   white-space: nowrap;
 }
 
-.answerOptionCheck {
+.answerCheckImg {
   flex-shrink: 0;
+  display: block;
   width: 20px;
   height: 20px;
-  border-radius: 999px;
-  background: var(--primary-300);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.answerCheckImg {
-  display: block;
-  width: 10px;
-  height: auto;
-  max-height: 8px;
   object-fit: contain;
 }
 

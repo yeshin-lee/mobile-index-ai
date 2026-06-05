@@ -78,9 +78,9 @@ const INITIAL_FAVORITE_QUESTIONS = [
 /** 탭별 추천 질문 (순서: 현황 파악, 변화 추적, 원인 탐색, 향후 예측) */
 const RECOMMENDED_QUESTIONS_BY_TAB: readonly (readonly string[])[] = [
   [
-    '1위와 2위 앱의 신규 설치 재방문율 격차가 가장 큰 업종은?',
+    '1위와 2위의 신규 설치 건 수 격차가 가장 큰 업종은?',
     '활성 기기 수가 가장 낮은 앱/업종을 알려줘',
-    '쿠팡의 최근 1년간 MAU 추이를 비교해줘',
+    '쿠팡의 현재 MAU와 신규 설치 현황을 알려줘',
     'G마켓의 1인당 사용시간이 가장 높은 사용자는?',
   ],
   [
@@ -734,13 +734,15 @@ const CHART2_DEEP_INTRO_TEXT =
 const CHART2_DEEP_INTRO_HIGHLIGHTS = ['38%가 쿠팡으로', '30대 여성', '이탈 가속화'] as const
 
 const CHART2_INDICATOR_PLAIN =
-  '최근 3개월간 G마켓 이탈 사용자 중 쿠팡 이동 비율이 38%로 가장 높았으며, 네이버쇼핑(24%), 무신사(15%) 순으로 나타났습니다. 연령대별로는 30대의 이탈률이 59%로 가장 높았고, 20대(40%), 40대(43%) 순이었습니다.'
+  '최근 3개월간 G마켓 이탈 사용자 중 쿠팡 이동 비율이 38%로 가장 높았으며, 네이버쇼핑(24%), 무신사(15%) 순으로 나타났습니다. 연령대별 성별 분포를 보면 20대는 여성 이탈 비율(55%)이 더 높고, 30대 이상부터는 남성 이탈 비율이 더 높게 나타나며 특히 50대 남성 이탈 비율이 60%로 가장 높았습니다.'
 
 const CHART2_INDICATOR_BODY = (
   <>
     최근 3개월간 G마켓 이탈 사용자 중 <strong>쿠팡 이동 비율이 38%</strong>로 가장 높았으며,
-    네이버쇼핑(24%), 무신사(15%) 순으로 나타났습니다. 연령대별로는{' '}
-    <strong>30대의 이탈률이 59%</strong>로 가장 높았고, 20대(40%), 40대(43%) 순이었습니다.
+    네이버쇼핑(24%), 무신사(15%) 순으로 나타났습니다. 연령대별 성별 분포를 보면{' '}
+    <strong>20대는 여성 이탈 비율(55%)</strong>이 더 높고, 30대 이상부터는{' '}
+    <strong>남성 이탈 비율이 더 높게</strong> 나타나며 특히{' '}
+    <strong>50대 남성 이탈 비율이 60%</strong>로 가장 높았습니다.
   </>
 )
 
@@ -1670,7 +1672,7 @@ export default function LandingPage() {
     setIsSending(true)
     setLoadingVariant('basic')
     try {
-      if (isDeepAnswer) {
+      if (isDeepAnswer && payload.kind === 'chart') {
         await sleep(7000, ac.signal)
         setLoadingVariant('complex')
         await sleep(5000, ac.signal)
@@ -2666,15 +2668,14 @@ export default function LandingPage() {
                             </span>
                           </span>
                           {selected ? (
-                            <span className={styles.answerOptionCheck}>
-                              <img
-                                src={icoCheck}
-                                alt=""
-                                width={10}
-                                height={8}
-                                className={styles.answerCheckImg}
-                              />
-                            </span>
+                            <img
+                              src={icoCheck}
+                              alt=""
+                              width={20}
+                              height={20}
+                              className={styles.answerCheckImg}
+                              aria-hidden
+                            />
                           ) : (
                             <span className={styles.answerOptionCheckSpacer} />
                           )}
@@ -2987,15 +2988,23 @@ export default function LandingPage() {
                   </div>
                   <div className={styles.chartExpandFooterWrap}>
                     <div className={styles.chartCardFooter}>
-                      <button
-                        type="button"
-                        className={styles.chartFooterAction}
-                        onClick={handleChartExpandImageSave}
-                      >
-                        <img src={icoDownload} alt="" className={styles.chartFooterIcon} />
-                        <span>이미지 저장</span>
-                      </button>
-                      <span className={styles.chartFooterDivider} aria-hidden />
+                      {expandedChartView === 'chart' ? (
+                        <>
+                          <button
+                            type="button"
+                            className={styles.chartFooterAction}
+                            onClick={handleChartExpandImageSave}
+                          >
+                            <img
+                              src={icoDownload}
+                              alt=""
+                              className={styles.chartFooterIcon}
+                            />
+                            <span>이미지 저장</span>
+                          </button>
+                          <span className={styles.chartFooterDivider} aria-hidden />
+                        </>
+                      ) : null}
                       <button
                         type="button"
                         className={styles.chartFooterAction}
