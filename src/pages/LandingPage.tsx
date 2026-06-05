@@ -850,7 +850,7 @@ const UNAVAILABLE_REPLY_TEXT =
   '저는 모바일 데이터 분석 전문 에이전트입니다. 앱 사용 현황, MAU, 신규 설치 등 모바일 데이터와 관련된 질문을 해주세요.\n예시) "쿠팡의 최근 1년간 MAU 추이를 분석해줘"'
 
 const CHART_REPLY_PATTERN =
-  /이탈|신규\s*설치|사용자|사용\s*시간|데이터|\bMAU\b|추이|업종|시장|비교|분석/i
+  /이탈|신규\s*설치|사용자|사용\s*시간|데이터|\bMAU\b|추이|업종|시장|비교|경쟁|분석/i
 
 const TEXT_REPLY_PATTERN =
   /서비스|설명|용어|안내|모바일인덱스|\bINSIGHT\b|상품/i
