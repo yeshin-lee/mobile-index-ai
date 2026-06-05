@@ -677,3 +677,7 @@
   z-index: 1200;
   pointer-events: none;
 }
+
+.modalPortalRoot > * {
+  pointer-events: auto;
+}

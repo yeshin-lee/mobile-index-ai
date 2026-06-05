@@ -848,7 +848,7 @@ const UNAVAILABLE_REPLY_TEXT =
   '저는 모바일 데이터 분석 전문 에이전트입니다. 앱 사용 현황, MAU, 신규 설치 등 모바일 데이터와 관련된 질문을 해주세요.\n예시) "쿠팡의 최근 1년간 MAU 추이를 분석해줘"'
 
 const CHART_REPLY_PATTERN =
-  /이탈|신규\s*설치|사용자\s*수|사용\s*시간|데이터|\bMAU\b|추이|업종|시장|비교|분석/i
+  /이탈|신규\s*설치|사용자|사용\s*시간|데이터|\bMAU\b|추이|업종|시장|비교|분석/i
 
 const TEXT_REPLY_PATTERN =
   /서비스|설명|용어|안내|모바일인덱스|\bINSIGHT\b|상품/i
@@ -1466,13 +1466,21 @@ export default function LandingPage() {
   const [expandedChartView, setExpandedChartView] = useState<ChartPanelView>('chart')
   const [expandedChartVariant, setExpandedChartVariant] = useState<ChartMockVariant>('combo')
   const [expandedTableTab, setExpandedTableTab] = useState<ChartTableTab>('apps')
-  const [modalPortalTarget, setModalPortalTarget] = useState<HTMLElement | null>(null)
+  const [modalPortalEl, setModalPortalEl] = useState<HTMLDivElement | null>(null)
   const toastTimerRef = useRef<number | null>(null)
   const downloadTimerRef = useRef<number | null>(null)
 
-  useLayoutEffect(() => {
-    setModalPortalTarget(document.getElementById(APP_MODAL_ROOT_ID))
+  const handleModalPortalRef = useCallback((node: HTMLDivElement | null) => {
+    setModalPortalEl(node)
   }, [])
+
+  const resolveModalPortal = useCallback((): HTMLElement => {
+    return (
+      modalPortalEl ??
+      document.getElementById(APP_MODAL_ROOT_ID) ??
+      document.body
+    )
+  }, [modalPortalEl])
 
   const showFeedbackToast = useCallback((msg: string) => {
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
@@ -1528,6 +1536,10 @@ export default function LandingPage() {
       setExpandedChartView(currentView)
       setExpandedChartVariant(variant)
       setExpandedTableTab(tableTab)
+      const portalRoot = document.getElementById(APP_MODAL_ROOT_ID)
+      if (portalRoot instanceof HTMLDivElement) {
+        setModalPortalEl(portalRoot)
+      }
       setIsChartExpanded(true)
     },
     [],
@@ -2024,6 +2036,7 @@ export default function LandingPage() {
 
   return (
     <Layout
+      modalPortalRef={handleModalPortalRef}
       onResetToHome={handleResetToHome}
       onShowToast={showFeedbackToast}
       currentThreadTitle={headerQuestionText}
@@ -2508,7 +2521,7 @@ export default function LandingPage() {
               </div>
             ) : (
               <div className={styles.mainContent}>
-              <div className={styles.heroSection}>
+              <div className={`${styles.heroSection} ${styles.heroFadeIn}`}>
                 <div className={styles.hero}>
                   <h1 className={styles.heroTitle}>
                     <span className={styles.heroLine1}>데이터 전문가 없이</span>
@@ -2530,7 +2543,7 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              <div className={styles.questionSection}>
+              <div className={`${styles.questionSection} ${styles.questionFadeIn}`}>
                 <div className={styles.tabRow} role="tablist" aria-label="질문 유형">
                   {TABS.map((label, i) => (
                     <button
@@ -2567,22 +2580,23 @@ export default function LandingPage() {
             )}
               </div>
             <div className={styles.composerWrap}>
-              {hasConversation && showScrollDownBtn ? (
-                <button
-                  type="button"
-                  className={styles.scrollDownBtn}
-                  aria-label="맨 아래로 스크롤"
-                  onClick={scrollChatToBottom}
-                >
-                  <img
-                    src={icoArrow}
-                    alt=""
-                    width={20}
-                    height={20}
-                    className={styles.scrollDownBtnIcon}
-                  />
-                </button>
-              ) : null}
+              <div className={styles.composerFieldWrap}>
+                {hasConversation && showScrollDownBtn ? (
+                  <button
+                    type="button"
+                    className={styles.scrollDownBtn}
+                    aria-label="맨 아래로 스크롤"
+                    onClick={scrollChatToBottom}
+                  >
+                    <img
+                      src={icoArrow}
+                      alt=""
+                      width={20}
+                      height={20}
+                      className={styles.scrollDownBtnIcon}
+                    />
+                  </button>
+                ) : null}
           <div
             ref={composerRef}
             className={
@@ -2777,6 +2791,7 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
+              </div>
         </div>
       </div>
       </div>
@@ -2786,12 +2801,13 @@ export default function LandingPage() {
           onSelectQuestion={scrollToQuestion}
         />
       ) : null}
-      {feedbackModalLineId ? (
-        <div
-          className={styles.feedbackOverlay}
-          role="presentation"
-          onClick={closeFeedbackModal}
-        >
+      {feedbackModalLineId
+        ? createPortal(
+            <div
+              className={styles.feedbackOverlay}
+              role="presentation"
+              onClick={closeFeedbackModal}
+            >
           <div
             className={styles.feedbackModal}
             role="dialog"
@@ -2885,9 +2901,11 @@ export default function LandingPage() {
               </button>
             </div>
           </div>
-        </div>
-      ) : null}
-      {isChartExpanded && modalPortalTarget
+            </div>,
+            resolveModalPortal(),
+          )
+        : null}
+      {isChartExpanded
         ? createPortal(
             <div
               className={styles.chartExpandOverlay}
@@ -2991,26 +3009,32 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>,
-            modalPortalTarget,
+            resolveModalPortal(),
           )
         : null}
-      {toastMessage ? (
-        <div className={styles.feedbackToast} role="status" aria-live="polite">
-          <img
-            src={icoCheck}
-            alt=""
-            width={20}
-            height={20}
-            className={styles.feedbackToastIcon}
-          />
-          <span className={styles.feedbackToastText}>{toastMessage}</span>
-        </div>
-      ) : null}
-      {isDownloading ? (
-        <div className={styles.downloadOverlay} role="status" aria-live="polite">
-          <div className={styles.downloadSpinner} aria-hidden />
-        </div>
-      ) : null}
+      {toastMessage
+        ? createPortal(
+            <div className={styles.feedbackToast} role="status" aria-live="polite">
+              <img
+                src={icoCheck}
+                alt=""
+                width={20}
+                height={20}
+                className={styles.feedbackToastIcon}
+              />
+              <span className={styles.feedbackToastText}>{toastMessage}</span>
+            </div>,
+            resolveModalPortal(),
+          )
+        : null}
+      {isDownloading
+        ? createPortal(
+            <div className={styles.downloadOverlay} role="status" aria-live="polite">
+              <div className={styles.downloadSpinner} aria-hidden />
+            </div>,
+            resolveModalPortal(),
+          )
+        : null}
     </Layout>
   )
 }

@@ -1,6 +1,7 @@
 import {
   Fragment,
   type ReactNode,
+  type Ref,
   useCallback,
   useEffect,
   useMemo,
@@ -133,6 +134,8 @@ function HistoryMenuIcon({ src }: { src: string }) {
 
 export type LayoutProps = {
   children: ReactNode
+  /** 차트 확장 등 전역 모달 포털 마운트 대상 */
+  modalPortalRef?: Ref<HTMLDivElement>
   /** SNB 로고·새 대화 클릭 시 첫 진입 화면으로 리셋 */
   onResetToHome?: () => void
   /** 현재 대화의 첫 user 질문 — 변경 시 SNB 히스토리에 스레드 추가 */
@@ -143,6 +146,7 @@ export type LayoutProps = {
 
 export default function Layout({
   children,
+  modalPortalRef,
   onResetToHome,
   currentThreadTitle,
   onShowToast,
@@ -427,7 +431,11 @@ export default function Layout({
           </div>
         </div>
       </div>
-      <div id={APP_MODAL_ROOT_ID} className={styles.modalPortalRoot} />
+      <div
+        id={APP_MODAL_ROOT_ID}
+        ref={modalPortalRef}
+        className={styles.modalPortalRoot}
+      />
     </div>
   )
 }

@@ -829,12 +829,12 @@
   filter: brightness(0) invert(1);
 }
 
-/* Figma toast — 화면 우측 상단 (GNB 32px + 12px) */
+/* Figma toast — 화면 우측 상단 (GNB 32px + 12px), 모달 포털 최상단 */
 .feedbackToast {
   position: fixed;
   top: 44px;
   right: 24px;
-  z-index: 1100;
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -867,23 +867,25 @@
 .feedbackOverlay {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
   box-sizing: border-box;
   background: rgba(0, 0, 0, 0.8);
+  pointer-events: auto;
 }
 
 .downloadOverlay {
   position: fixed;
   inset: 0;
-  z-index: 1100;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.8);
+  pointer-events: auto;
 }
 
 .downloadSpinner {
@@ -1991,6 +1993,26 @@
   flex-shrink: 0;
 }
 
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.heroFadeIn {
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+.questionFadeIn {
+  animation: fadeInUp 0.5s ease 0.15s forwards;
+  opacity: 0;
+}
+
 .hero {
   text-align: center;
   width: 100%;
@@ -2219,24 +2241,30 @@
   box-sizing: border-box;
 }
 
+.composerFieldWrap {
+  position: relative;
+  width: 100%;
+}
+
 .composerWrap::before {
   content: '';
   position: absolute;
   left: 0;
   right: 0;
   bottom: 100%;
-  height: 40px;
+  height: 24px;
   background: linear-gradient(to bottom, transparent, rgba(48, 48, 54, 0.9));
   pointer-events: none;
-  z-index: 2;
+  z-index: 1;
 }
 
 .scrollDownBtn {
   position: absolute;
   left: 50%;
-  bottom: calc(100% + 8px);
+  bottom: calc(100% + 24px);
   transform: translateX(-50%);
-  z-index: 3;
+  /* 그라데이션(1) 위, 질문창·드롭다운(.searchBox 2, DOM 순서상 위) 아래 */
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
