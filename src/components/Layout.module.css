@@ -681,3 +681,99 @@
 .modalPortalRoot > * {
   pointer-events: auto;
 }
+
+/* Figma 삭제 확인 모달 (`24359:31817`) — 피드백 모달 톤과 동일 */
+.historyDeleteOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.8);
+  pointer-events: auto;
+}
+
+.historyDeleteModal {
+  width: 400px;
+  max-width: 100%;
+  padding: 24px;
+  border-radius: 10px;
+  background: var(--gray-750);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 40px;
+  box-sizing: border-box;
+}
+
+.historyDeleteModalContent {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.historyDeleteModalTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--white);
+}
+
+.historyDeleteModalDesc {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #e4e4e7;
+}
+
+.historyDeleteModalFooter {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.historyDeleteCancelBtn,
+.historyDeleteConfirmBtn {
+  padding: 6px 20px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+  cursor: pointer;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.historyDeleteCancelBtn {
+  border: 1px solid var(--gray-600);
+  background: transparent;
+  color: var(--white);
+}
+
+.historyDeleteCancelBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.historyDeleteConfirmBtn {
+  border: none;
+  background: #9d6af0;
+  color: var(--white);
+}
+
+.historyDeleteConfirmBtn:hover {
+  background: var(--primary-300);
+}
+
+.historyDeleteCancelBtn:focus-visible,
+.historyDeleteConfirmBtn:focus-visible {
+  outline: 2px solid var(--primary-300);
+  outline-offset: 2px;
+}

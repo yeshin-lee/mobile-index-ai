@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { createPortal } from 'react-dom'
 import styles from './Layout.module.css'
 import miHomePng from '../assets/gnb/mi-home.png'
 import icoSnb01 from '../assets/ico_snb01.svg'
@@ -157,7 +158,29 @@ export default function Layout({
     [historyItems],
   )
   const [openMenuItemId, setOpenMenuItemId] = useState<string | null>(null)
+  const [pendingDeleteItemId, setPendingDeleteItemId] = useState<string | null>(null)
   const prevThreadTitleRef = useRef<string | undefined>(undefined)
+
+  const cancelDeleteHistory = useCallback(() => {
+    setPendingDeleteItemId(null)
+  }, [])
+
+  const confirmDeleteHistory = useCallback(() => {
+    if (!pendingDeleteItemId) return
+    const itemId = pendingDeleteItemId
+    let wasActive = false
+    setHistoryItems((prev) => {
+      const target = prev.find((item) => item.id === itemId)
+      wasActive = Boolean(target?.active)
+      return prev.filter((item) => item.id !== itemId)
+    })
+    setPendingDeleteItemId(null)
+    if (wasActive) {
+      prevThreadTitleRef.current = ''
+      onResetToHome?.()
+    }
+    onShowToast?.('히스토리가 삭제되었습니다.')
+  }, [pendingDeleteItemId, onResetToHome, onShowToast])
 
   const handleHistoryMenuAction = useCallback(
     (action: HistoryMenuAction, itemId: string) => {
@@ -178,26 +201,25 @@ export default function Layout({
       }
 
       if (action === 'delete') {
-        let wasActive = false
-        setHistoryItems((prev) => {
-          const target = prev.find((item) => item.id === itemId)
-          wasActive = Boolean(target?.active)
-          return prev.filter((item) => item.id !== itemId)
-        })
         setOpenMenuItemId(null)
-        if (wasActive) {
-          prevThreadTitleRef.current = ''
-          onResetToHome?.()
-        }
-        onShowToast?.('히스토리가 삭제되었습니다.')
+        setPendingDeleteItemId(itemId)
         return
       }
 
       console.log(action, itemId)
       setOpenMenuItemId(null)
     },
-    [onResetToHome, onShowToast],
+    [],
   )
+
+  useEffect(() => {
+    if (!pendingDeleteItemId) return
+    const onKeyDown = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'Escape') cancelDeleteHistory()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [pendingDeleteItemId, cancelDeleteHistory])
 
   useEffect(() => {
     if (!openMenuItemId) return
@@ -436,6 +458,56 @@ export default function Layout({
         ref={modalPortalRef}
         className={styles.modalPortalRoot}
       />
+      {pendingDeleteItemId
+        ? createPortal(
+            <div
+              className={styles.historyDeleteOverlay}
+              role="presentation"
+              onClick={cancelDeleteHistory}
+            >
+              <div
+                className={styles.historyDeleteModal}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="history-delete-modal-title"
+                aria-describedby="history-delete-modal-desc"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className={styles.historyDeleteModalContent}>
+                  <h3
+                    id="history-delete-modal-title"
+                    className={styles.historyDeleteModalTitle}
+                  >
+                    대화를 삭제하시겠어요?
+                  </h3>
+                  <p
+                    id="history-delete-modal-desc"
+                    className={styles.historyDeleteModalDesc}
+                  >
+                    삭제된 대화는 복구할 수 없습니다.
+                  </p>
+                </div>
+                <div className={styles.historyDeleteModalFooter}>
+                  <button
+                    type="button"
+                    className={styles.historyDeleteCancelBtn}
+                    onClick={cancelDeleteHistory}
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.historyDeleteConfirmBtn}
+                    onClick={confirmDeleteHistory}
+                  >
+                    삭제
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.getElementById(APP_MODAL_ROOT_ID) ?? document.body,
+          )
+        : null}
     </div>
   )
 }
