@@ -179,7 +179,7 @@ export default function Layout({
       prevThreadTitleRef.current = ''
       onResetToHome?.()
     }
-    onShowToast?.('히스토리가 삭제되었습니다.')
+    onShowToast?.('대화가 삭제되었습니다.')
   }, [pendingDeleteItemId, onResetToHome, onShowToast])
 
   const handleHistoryMenuAction = useCallback(
