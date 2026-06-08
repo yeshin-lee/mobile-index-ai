@@ -1472,6 +1472,7 @@
 }
 
 .chartToggleTrack {
+  position: relative;
   display: inline-flex;
   flex-direction: row;
   align-items: center;
@@ -1484,29 +1485,43 @@
   box-sizing: border-box;
 }
 
-.chartTogglePill,
-.chartTogglePillActive {
+.chartToggleSlider {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--primary-300);
+  pointer-events: none;
+  z-index: 0;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.chartToggleSliderTable {
+  transform: translateX(26px);
+}
+
+.chartTogglePill {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 26px;
+  height: 26px;
   padding: 0;
   border: none;
   background: transparent;
   cursor: pointer;
   font: inherit;
   border-radius: 999px;
+  flex-shrink: 0;
 }
 
 .chartTogglePill:hover {
   opacity: 0.92;
-}
-
-.chartTogglePillActive:hover {
-  opacity: 0.95;
-}
-
-.chartTogglePillActive {
-  color: var(--white);
 }
 
 .chartToggleIconShell {
@@ -1516,14 +1531,6 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-}
-
-.chartTogglePillActive .chartToggleIconShell {
-  background: var(--primary-300);
-}
-
-.chartTogglePill:not(.chartTogglePillActive) .chartToggleIconShell {
-  background: transparent;
 }
 
 .chartToggleGlyph {
@@ -1537,6 +1544,7 @@
   -webkit-mask-size: contain;
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-position: center;
+  transition: background-color 0.25s ease;
 }
 
 .chartToggleGlyphChart {

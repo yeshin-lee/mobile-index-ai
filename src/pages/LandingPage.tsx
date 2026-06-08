@@ -1105,9 +1105,15 @@ function ChartViewToggle({
 }) {
   return (
     <div className={styles.chartToggleTrack} role="group" aria-label="차트 보기 형식">
+      <span
+        className={`${styles.chartToggleSlider} ${
+          view === 'table' ? styles.chartToggleSliderTable : ''
+        }`}
+        aria-hidden
+      />
       <button
         type="button"
-        className={view === 'chart' ? styles.chartTogglePillActive : styles.chartTogglePill}
+        className={styles.chartTogglePill}
         aria-pressed={view === 'chart'}
         aria-label="차트"
         onClick={() => onViewChange('chart')}
@@ -1123,7 +1129,7 @@ function ChartViewToggle({
       </button>
       <button
         type="button"
-        className={view === 'table' ? styles.chartTogglePillActive : styles.chartTogglePill}
+        className={styles.chartTogglePill}
         aria-pressed={view === 'table'}
         aria-label="표"
         onClick={() => onViewChange('table')}
