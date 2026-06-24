@@ -705,6 +705,8 @@ const CHART_INTRO_TEXT =
 const CHART_CARD_TITLE =
   '쿠팡의 2024년 4월~2025년 3월 MAU, 신규 설치 건 수 추이 비교'
 
+const CHART_CARD_SUBTITLE = '성별 전체, 연령대 전체, OS 전체 기준'
+
 const CHART2_CARD_TITLE =
   'G마켓의 최근 3개월 이탈 사용자 이동 앱 및 연령대별 성별 분포'
 
@@ -1337,6 +1339,26 @@ function ChartPanelBody2({
   )
 }
 
+function ChartV1TitleSection({ titleId }: { titleId?: string }) {
+  return (
+    <div className={styles.chartCardTitleBlock}>
+      <div className={styles.chartCardTitleWrap}>
+        <img
+          src={imgAppicon}
+          alt=""
+          width={20}
+          height={20}
+          className={styles.chartCardAppIcon}
+        />
+        <h3 id={titleId} className={styles.chartCardTitle}>
+          {CHART_CARD_TITLE}
+        </h3>
+      </div>
+      <p className={styles.chartCardSubtitle}>{CHART_CARD_SUBTITLE}</p>
+    </div>
+  )
+}
+
 function ChartMockCard({
   onImageSave,
   onExcelDownload,
@@ -1351,16 +1373,7 @@ function ChartMockCard({
     <div className={styles.chartCard}>
       <div className={styles.chartCardUpper}>
         <div className={styles.chartCardHeader}>
-          <div className={styles.chartCardTitleWrap}>
-            <img
-              src={imgAppicon}
-              alt=""
-              width={20}
-              height={20}
-              className={styles.chartCardAppIcon}
-            />
-            <h3 className={styles.chartCardTitle}>{CHART_CARD_TITLE}</h3>
-          </div>
+          <ChartV1TitleSection />
           <ChartViewToggle view={view} onViewChange={setView} />
         </div>
         <ChartPanelBody view={view} variant="card" />
@@ -2960,22 +2973,22 @@ export default function LandingPage() {
                 >
                   <div className={styles.chartExpandModalUpper}>
                     <div className={styles.chartExpandModalHeader}>
-                      <div className={styles.chartCardTitleWrap}>
-                        <img
-                          src={
-                            expandedChartVariant === 'churn' ? imgAppicon2 : imgAppicon
-                          }
-                          alt=""
-                          width={20}
-                          height={20}
-                          className={styles.chartCardAppIcon}
-                        />
-                        <h3 id="chart-expand-title" className={styles.chartCardTitle}>
-                          {expandedChartVariant === 'churn'
-                            ? CHART2_CARD_TITLE
-                            : CHART_CARD_TITLE}
-                        </h3>
-                      </div>
+                      {expandedChartVariant === 'churn' ? (
+                        <div className={styles.chartCardTitleWrap}>
+                          <img
+                            src={imgAppicon2}
+                            alt=""
+                            width={20}
+                            height={20}
+                            className={styles.chartCardAppIcon}
+                          />
+                          <h3 id="chart-expand-title" className={styles.chartCardTitle}>
+                            {CHART2_CARD_TITLE}
+                          </h3>
+                        </div>
+                      ) : (
+                        <ChartV1TitleSection titleId="chart-expand-title" />
+                      )}
                       <ChartViewToggle
                         view={expandedChartView}
                         onViewChange={setExpandedChartView}

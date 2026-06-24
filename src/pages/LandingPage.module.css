@@ -1358,13 +1358,31 @@
   margin-bottom: 10px;
 }
 
+.chartCardTitleBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
 .chartCardTitleWrap {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 10px;
-  flex: 1;
+  gap: 6px;
+  width: 100%;
   min-width: 0;
+}
+
+.chartCardHeader > .chartCardTitleWrap {
+  flex: 1;
+}
+
+.chartExpandModalHeader > .chartCardTitleWrap {
+  flex: 1;
 }
 
 .chartCardAppIcon {
@@ -1469,6 +1487,17 @@
   color: #f2f2f5;
   line-height: 1.45;
   letter-spacing: -0.02em;
+}
+
+/* Figma `24478:10550` — 조건 서브타이틀 (chart v1 only) */
+.chartCardSubtitle {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: normal;
+  color: var(--gray-300);
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .chartToggleTrack {
