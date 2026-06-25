@@ -2415,6 +2415,7 @@ export default function LandingPage() {
                 const showBasicChartDeepDive =
                   assistantLine.replyKind === 'chart' &&
                   (assistantLine.chartDepth ?? 'basic') === 'basic'
+                const isUnavailableReply = assistantLine.replyKind === 'unavailable'
                 const feedbackPhase = feedbackByLine[line.id]
                 const liked = feedbackPhase === 'liked'
                 const disliked = feedbackPhase === 'disliked'
@@ -2577,22 +2578,26 @@ export default function LandingPage() {
                       {showAnswerFooter ? (
                         <div className={styles.answerFooterRow}>
                           <div className={styles.answerActions}>
-                            <AnswerActionIconBtn
-                              label="복사하기"
-                              tooltip="복사하기"
-                              iconSrc={icoCopy}
-                              onClick={() =>
-                                void handleCopyAnswer(assistantPlainText(assistantLine))
-                              }
-                            />
-                            {isLast ? (
-                              <AnswerActionIconBtn
-                                label="재시도"
-                                tooltip="재시도"
-                                iconSrc={icoReplay}
-                                disabled={isSending}
-                                onClick={() => void handleRegenerateLast()}
-                              />
+                            {!isUnavailableReply ? (
+                              <>
+                                <AnswerActionIconBtn
+                                  label="복사하기"
+                                  tooltip="복사하기"
+                                  iconSrc={icoCopy}
+                                  onClick={() =>
+                                    void handleCopyAnswer(assistantPlainText(assistantLine))
+                                  }
+                                />
+                                {isLast ? (
+                                  <AnswerActionIconBtn
+                                    label="재시도"
+                                    tooltip="재시도"
+                                    iconSrc={icoReplay}
+                                    disabled={isSending}
+                                    onClick={() => void handleRegenerateLast()}
+                                  />
+                                ) : null}
+                              </>
                             ) : null}
                             <AnswerFeedbackIconBtn
                               label="도움이 됐어요"
