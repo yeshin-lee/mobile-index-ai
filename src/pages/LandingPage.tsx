@@ -30,9 +30,11 @@ import icoCopy from '../assets/ico_copy.svg'
 import icoDownload from '../assets/ico_download.svg'
 import icoExcel from '../assets/ico_excel.svg'
 import icoExpand from '../assets/ico_expand.svg'
-import icoFeedback from '../assets/ico_feedback.svg'
+import icoDeepdive from '../assets/ico_deepdive.svg'
 import icoHate from '../assets/ico_hate.svg'
+import icoHateLine from '../assets/ico_hate_line.svg'
 import icoLike from '../assets/ico_like.svg'
+import icoLikeLine from '../assets/ico_like_line.svg'
 import icoArrow from '../assets/ico_arrow.svg'
 import icoBranchLast from '../assets/ico_branch_last.svg'
 import icoBranchMiddle from '../assets/ico_branch_middle.svg'
@@ -42,19 +44,12 @@ import icoOpen from '../assets/ico_open.svg'
 import icoPause from '../assets/ico_pause.svg'
 import icoReplay from '../assets/ico_replay.svg'
 import icoSend from '../assets/ico_send.svg'
-import icoShare2 from '../assets/ico_share2.svg'
 import icoSymbol from '../assets/ico_symbol.svg'
 import styles from './LandingPage.module.css'
 
 const TABS = ['현황 파악', '변화 추적', '원인 탐색', '향후 예측'] as const
 
 const CHAT_SCROLL_BOTTOM_THRESHOLD = 50
-
-const ANSWER_OPTIONS = [
-  { mode: '기본 답변' as const, description: '데이터 요약 및 시각화 제공' },
-  { mode: '심화 답변' as const, description: '데이터 분석 + 비즈니스 인사이트 포함' },
-] as const
-type AnswerMode = (typeof ANSWER_OPTIONS)[number]['mode']
 
 /** Figma 피드백 모달 (`24359:29183`) 사유 목록 */
 const FEEDBACK_REASONS = [
@@ -671,6 +666,73 @@ function AnswerActionIconBtn({
   )
 }
 
+function AnswerFeedbackIconBtn({
+  label,
+  tooltip,
+  lineIconSrc,
+  activeIconSrc,
+  active,
+  disabled,
+  onClick,
+}: {
+  label: string
+  tooltip: string
+  lineIconSrc: string
+  activeIconSrc: string
+  active: boolean
+  disabled?: boolean
+  onClick?: () => void
+}) {
+  return (
+    <TooltipWrap label={tooltip} disabled={disabled}>
+      <button
+        type="button"
+        className={`${styles.answerIconBtn}${active ? ` ${styles.answerIconBtnActive}` : ''}`}
+        aria-label={label}
+        aria-pressed={active}
+        disabled={disabled}
+        onClick={onClick}
+      >
+        <img
+          src={active ? activeIconSrc : lineIconSrc}
+          alt=""
+          width={20}
+          height={20}
+          className={styles.answerIconImg}
+        />
+      </button>
+    </TooltipWrap>
+  )
+}
+
+function AnswerDeepDiveBtn({
+  disabled,
+  onClick,
+}: {
+  disabled?: boolean
+  onClick?: () => void
+}) {
+  return (
+    <TooltipWrap label="깊은 분석+인사이트 제공" disabled={disabled}>
+      <button
+        type="button"
+        className={styles.answerDeepDiveBtn}
+        disabled={disabled}
+        onClick={onClick}
+      >
+        <img
+          src={icoDeepdive}
+          alt=""
+          width={20}
+          height={20}
+          className={styles.answerDeepDiveIcon}
+        />
+        <span>심층 분석하기</span>
+      </button>
+    </TooltipWrap>
+  )
+}
+
 type TextMockCategory = 'data' | 'industry' | 'default'
 type ReplyKind = 'chart' | 'text' | 'unavailable'
 
@@ -709,6 +771,8 @@ const CHART_CARD_SUBTITLE = '성별 전체, 연령대 전체, OS 전체 기준'
 
 const CHART2_CARD_TITLE =
   'G마켓의 최근 3개월 이탈 사용자 이동 앱 및 연령대별 성별 분포'
+
+const CHART2_CARD_SUBTITLE = '2026.02~2025.05 기간, OS 전체 기준'
 
 const CHART2_APP_TABLE_ROWS = [
   { app: '쿠팡', rate: '38%' },
@@ -880,27 +944,29 @@ function chartVariantForThread(thread: ChatLine[]): ChartMockVariant {
   return chartCount % 2 === 0 ? 'combo' : 'churn'
 }
 
-function buildStreamPayload(
-  question: string,
-  answerMode: AnswerMode,
-  thread: ChatLine[],
-): StreamPayload {
+function buildChartPayload(
+  variant: ChartMockVariant,
+  depth: ChartAnswerDepth,
+): Extract<StreamPayload, { kind: 'chart' }> {
+  const intro =
+    variant === 'churn'
+      ? depth === 'deep'
+        ? CHART2_DEEP_INTRO_TEXT
+        : CHART2_INTRO_TEXT
+      : depth === 'deep'
+        ? CHART_DEEP_INTRO_TEXT
+        : CHART_INTRO_TEXT
+  return { kind: 'chart', intro, depth, variant }
+}
+
+function buildStreamPayload(question: string, thread: ChatLine[]): StreamPayload {
   const kind = classifyReplyKind(question)
   if (kind === 'unavailable') {
     return { kind: 'unavailable', text: UNAVAILABLE_REPLY_TEXT }
   }
   if (kind === 'chart') {
-    const depth: ChartAnswerDepth = answerMode === '심화 답변' ? 'deep' : 'basic'
     const variant = chartVariantForThread(thread)
-    const intro =
-      variant === 'churn'
-        ? depth === 'deep'
-          ? CHART2_DEEP_INTRO_TEXT
-          : CHART2_INTRO_TEXT
-        : depth === 'deep'
-          ? CHART_DEEP_INTRO_TEXT
-          : CHART_INTRO_TEXT
-    return { kind: 'chart', intro, depth, variant }
+    return buildChartPayload(variant, 'basic')
   }
   const { text, category } = getTextMockForQuestion(question)
   return { kind: 'text', text, mockCategory: category }
@@ -1359,6 +1425,26 @@ function ChartV1TitleSection({ titleId }: { titleId?: string }) {
   )
 }
 
+function ChartV2TitleSection({ titleId }: { titleId?: string }) {
+  return (
+    <div className={styles.chartCardTitleBlock}>
+      <div className={styles.chartCardTitleWrap}>
+        <img
+          src={imgAppicon2}
+          alt=""
+          width={20}
+          height={20}
+          className={styles.chartCardAppIcon}
+        />
+        <h3 id={titleId} className={styles.chartCardTitle}>
+          {CHART2_CARD_TITLE}
+        </h3>
+      </div>
+      <p className={styles.chartCardSubtitle}>{CHART2_CARD_SUBTITLE}</p>
+    </div>
+  )
+}
+
 function ChartMockCard({
   onImageSave,
   onExcelDownload,
@@ -1418,16 +1504,7 @@ function ChartMockCard2({
     <div className={styles.chartCard}>
       <div className={styles.chartCardUpper}>
         <div className={styles.chartCardHeader}>
-          <div className={styles.chartCardTitleWrap}>
-            <img
-              src={imgAppicon2}
-              alt=""
-              width={20}
-              height={20}
-              className={styles.chartCardAppIcon}
-            />
-            <h3 className={styles.chartCardTitle}>{CHART2_CARD_TITLE}</h3>
-          </div>
+          <ChartV2TitleSection />
           <ChartViewToggle view={view} onViewChange={setView} />
         </div>
         {view === 'chart' ? (
@@ -1466,10 +1543,10 @@ function ChartMockCard2({
 export default function LandingPage() {
   const [message, setMessage] = useState('')
   const [activeTab, setActiveTab] = useState(0)
-  const [answerMode, setAnswerMode] = useState<AnswerMode>('기본 답변')
-  const [openMenu, setOpenMenu] = useState<'answer' | 'bookmark' | null>(null)
+  const [openMenu, setOpenMenu] = useState<'bookmark' | null>(null)
   const [isSending, setIsSending] = useState(false)
   const [loadingVariant, setLoadingVariant] = useState<'basic' | 'complex'>('basic')
+  const [deepDiveLoading, setDeepDiveLoading] = useState(false)
   const [thread, setThread] = useState<ChatLine[]>([])
   const [favoriteQuestions, setFavoriteQuestions] = useState<string[]>(() => [
     ...INITIAL_FAVORITE_QUESTIONS,
@@ -1483,8 +1560,9 @@ export default function LandingPage() {
   const threadRef = useRef<ChatLine[]>([])
 
   /** 답변 피드백 — line.id 기준 */
-  type FeedbackPhase = 'choosing' | 'liked' | 'disliked'
+  type FeedbackPhase = 'liked' | 'disliked'
   const [feedbackByLine, setFeedbackByLine] = useState<Record<string, FeedbackPhase>>({})
+  const [deepDiveUsedByLine, setDeepDiveUsedByLine] = useState<Record<string, boolean>>({})
   const [feedbackModalLineId, setFeedbackModalLineId] = useState<string | null>(null)
   const [feedbackReasons, setFeedbackReasons] = useState<Record<string, boolean>>({})
   const [feedbackComment, setFeedbackComment] = useState('')
@@ -1586,10 +1664,6 @@ export default function LandingPage() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [isChartExpanded, closeChartExpand])
 
-  const openFeedbackChoice = useCallback((lineId: string) => {
-    setFeedbackByLine((prev) => ({ ...prev, [lineId]: 'choosing' }))
-  }, [])
-
   const handleLikeFeedback = useCallback(
     (lineId: string) => {
       setFeedbackByLine((prev) => ({ ...prev, [lineId]: 'liked' }))
@@ -1657,11 +1731,13 @@ export default function LandingPage() {
     streamAbortRef.current = null
     setIsSending(false)
     setLoadingVariant('basic')
+    setDeepDiveLoading(false)
     setOpenMenu(null)
     setThread([])
     setMessage('')
     setIsThreadPanelOpen(false)
     setFeedbackByLine({})
+    setDeepDiveUsedByLine({})
     setFeedbackModalLineId(null)
     setFeedbackReasons({})
     setFeedbackComment('')
@@ -1691,14 +1767,19 @@ export default function LandingPage() {
     )
   }
 
-  async function runMockAssistantStream(payload: StreamPayload, isDeepAnswer: boolean) {
+  async function runMockAssistantStream(
+    payload: StreamPayload,
+    options?: { deepDiveLoading?: boolean },
+  ) {
     streamAbortRef.current?.abort()
     const ac = new AbortController()
     streamAbortRef.current = ac
     setIsSending(true)
     setLoadingVariant('basic')
+    setDeepDiveLoading(Boolean(options?.deepDiveLoading))
+    const isDeepChart = payload.kind === 'chart' && payload.depth === 'deep'
     try {
-      if (isDeepAnswer && payload.kind === 'chart') {
+      if (isDeepChart) {
         await sleep(7000, ac.signal)
         setLoadingVariant('complex')
         await sleep(5000, ac.signal)
@@ -1849,6 +1930,7 @@ export default function LandingPage() {
     } finally {
       setIsSending(false)
       setLoadingVariant('basic')
+      setDeepDiveLoading(false)
       streamAbortRef.current = null
     }
   }
@@ -1864,7 +1946,7 @@ export default function LandingPage() {
     setMessage('')
 
     const questionDepth = options?.questionDepth ?? 1
-    const payload = buildStreamPayload(question, answerMode, thread)
+    const payload = buildStreamPayload(question, thread)
     const userLine: ChatLine = {
       id: newId(),
       role: 'user',
@@ -1918,7 +2000,7 @@ export default function LandingPage() {
       setThread((prev) => [...prev, asstLine])
     }
 
-    await runMockAssistantStream(payload, answerMode === '심화 답변')
+    await runMockAssistantStream(payload)
   }
 
   async function handleCopyAnswer(text: string) {
@@ -1929,16 +2011,75 @@ export default function LandingPage() {
     }
   }
 
-  async function handleShareAnswer(text: string) {
-    try {
-      if (navigator.share) {
-        await navigator.share({ text })
-      } else {
-        await handleCopyAnswer(text)
-      }
-    } catch {
-      /* 사용자가 공유 취소 */
+  async function handleDeepChartAnalysis(assistantLineId: string) {
+    if (isSending || deepDiveUsedByLine[assistantLineId]) return
+    const prev = threadRef.current
+    const assistantIndex = prev.findIndex((l) => l.id === assistantLineId)
+    if (assistantIndex < 1) return
+    const userLine = prev[assistantIndex - 1]
+    const assistantLine = prev[assistantIndex]
+    if (
+      userLine.role !== 'user' ||
+      assistantLine.role !== 'assistant' ||
+      assistantLine.replyKind !== 'chart' ||
+      assistantLine.chartDepth === 'deep'
+    ) {
+      return
     }
+
+    const variant = assistantLine.chartMockVariant ?? 'combo'
+    const deepQuestion = `${userLine.content} (심층 분석)`
+    const payload = buildChartPayload(variant, 'deep')
+
+    setDeepDiveUsedByLine((used) => ({ ...used, [assistantLineId]: true }))
+
+    const userLineNew: ChatLine = {
+      id: newId(),
+      role: 'user',
+      content: deepQuestion,
+      questionDepth: userLine.questionDepth,
+    }
+    const asstLine: ChatLine = {
+      id: newId(),
+      role: 'assistant',
+      content: '',
+      showScrollPadding: true,
+      replyKind: 'chart',
+      chartDepth: 'deep',
+      chartMockVariant: variant,
+    }
+
+    flushSync(() => {
+      setThread((threadPrev) => [...threadPrev, userLineNew])
+    })
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+
+    const targetEl = document.querySelector(
+      `[data-line-id="${userLineNew.id}"]`,
+    ) as HTMLElement | null
+    const container = document.querySelector(
+      '[class*="chat-scroll-container"]',
+    ) as HTMLElement | null
+
+    if (targetEl && container) {
+      const scrollTarget = Math.max(
+        0,
+        targetEl.getBoundingClientRect().top -
+          container.getBoundingClientRect().top +
+          container.scrollTop,
+      )
+      setThread((threadPrev) => [...threadPrev, asstLine])
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          container.scrollTop = scrollTarget
+        })
+      })
+    } else {
+      setThread((threadPrev) => [...threadPrev, asstLine])
+    }
+
+    await runMockAssistantStream(payload, { deepDiveLoading: true })
   }
 
   async function handleRegenerateLast() {
@@ -1949,7 +2090,10 @@ export default function LandingPage() {
     if (last.role !== 'assistant') return
     const prevUser = prev[prev.length - 2]
     if (prevUser.role !== 'user') return
-    const payload = buildStreamPayload(prevUser.content, answerMode, prev.slice(0, -1))
+    let payload = buildStreamPayload(prevUser.content, prev.slice(0, -1))
+    if (payload.kind === 'chart' && last.chartDepth === 'deep') {
+      payload = buildChartPayload(last.chartMockVariant ?? payload.variant, 'deep')
+    }
     const next: ChatLine[] = [
       ...prev.slice(0, -1),
       {
@@ -1975,7 +2119,7 @@ export default function LandingPage() {
       },
     ]
     setThread(next)
-    await runMockAssistantStream(payload, answerMode === '심화 답변')
+    await runMockAssistantStream(payload)
   }
 
   useEffect(() => {
@@ -2190,7 +2334,9 @@ export default function LandingPage() {
                           <p className={styles.loadingGradientText}>
                             {loadingVariant === 'complex'
                               ? '데이터를 분석하고 인사이트를 생성하고 있습니다'
-                              : '답변을 생성하고 있습니다'}
+                              : deepDiveLoading
+                                ? '심층 분석을 시작합니다'
+                                : '답변을 생성하고 있습니다'}
                             <span className={styles.loadingDots} aria-hidden>
                               <span>.</span>
                               <span>.</span>
@@ -2265,6 +2411,13 @@ export default function LandingPage() {
 
                 const showAnswerFooter =
                   Boolean(line.content) && !(isLast && isSending) && chartReplyComplete
+
+                const showBasicChartDeepDive =
+                  assistantLine.replyKind === 'chart' &&
+                  (assistantLine.chartDepth ?? 'basic') === 'basic'
+                const feedbackPhase = feedbackByLine[line.id]
+                const liked = feedbackPhase === 'liked'
+                const disliked = feedbackPhase === 'disliked'
 
                 return (
                   <article key={line.id} className={styles.answerArticle}>
@@ -2432,14 +2585,6 @@ export default function LandingPage() {
                                 void handleCopyAnswer(assistantPlainText(assistantLine))
                               }
                             />
-                            <AnswerActionIconBtn
-                              label="공유하기"
-                              tooltip="공유하기"
-                              iconSrc={icoShare2}
-                              onClick={() =>
-                                void handleShareAnswer(assistantPlainText(assistantLine))
-                              }
-                            />
                             {isLast ? (
                               <AnswerActionIconBtn
                                 label="재시도"
@@ -2449,80 +2594,33 @@ export default function LandingPage() {
                                 onClick={() => void handleRegenerateLast()}
                               />
                             ) : null}
+                            <AnswerFeedbackIconBtn
+                              label="도움이 됐어요"
+                              tooltip="도움이 됐어요"
+                              lineIconSrc={icoLikeLine}
+                              activeIconSrc={icoLike}
+                              active={liked}
+                              disabled={liked}
+                              onClick={() => handleLikeFeedback(line.id)}
+                            />
+                            <AnswerFeedbackIconBtn
+                              label="아쉬워요"
+                              tooltip="아쉬워요"
+                              lineIconSrc={icoHateLine}
+                              activeIconSrc={icoHate}
+                              active={disliked}
+                              disabled={disliked}
+                              onClick={() => handleDislikeFeedback(line.id)}
+                            />
                           </div>
-                          {feedbackByLine[line.id] ? (
-                            (() => {
-                              const phase = feedbackByLine[line.id]
-                              const liked = phase === 'liked'
-                              const disliked = phase === 'disliked'
-                              return (
-                                <div
-                                  className={styles.feedbackPanel}
-                                  role="group"
-                                  aria-label="답변 피드백"
-                                >
-                                  <span className={styles.feedbackPanelText}>
-                                    이 답변이 도움이 되었나요?
-                                  </span>
-                                  <TooltipWrap label="도움이 됐어요">
-                                    <button
-                                      type="button"
-                                      className={`${styles.feedbackIconBtn}${
-                                        liked ? ` ${styles.feedbackIconBtnActive}` : ''
-                                      }`}
-                                      disabled={liked}
-                                      aria-pressed={liked}
-                                      aria-label="도움이 됐어요"
-                                      onClick={() => handleLikeFeedback(line.id)}
-                                    >
-                                      <img
-                                        src={icoLike}
-                                        alt=""
-                                        width={20}
-                                        height={20}
-                                        className={styles.feedbackIconImg}
-                                      />
-                                    </button>
-                                  </TooltipWrap>
-                                  <TooltipWrap label="아쉬워요">
-                                    <button
-                                      type="button"
-                                      className={`${styles.feedbackIconBtn}${
-                                        disliked ? ` ${styles.feedbackIconBtnActive}` : ''
-                                      }`}
-                                      disabled={disliked}
-                                      aria-pressed={disliked}
-                                      aria-label="아쉬워요"
-                                      onClick={() => handleDislikeFeedback(line.id)}
-                                    >
-                                      <img
-                                        src={icoHate}
-                                        alt=""
-                                        width={20}
-                                        height={20}
-                                        className={styles.feedbackIconImg}
-                                      />
-                                    </button>
-                                  </TooltipWrap>
-                                </div>
-                              )
-                            })()
-                          ) : (
-                            <button
-                              type="button"
-                              className={styles.answerFeedbackBtn}
-                              onClick={() => openFeedbackChoice(line.id)}
-                            >
-                              <img
-                                src={icoFeedback}
-                                alt=""
-                                width={20}
-                                height={20}
-                                className={styles.answerFeedbackIcon}
-                              />
-                              답변 피드백하기
-                            </button>
-                          )}
+                          {showBasicChartDeepDive ? (
+                            <AnswerDeepDiveBtn
+                              disabled={
+                                isSending || Boolean(deepDiveUsedByLine[line.id])
+                              }
+                              onClick={() => void handleDeepChartAnalysis(line.id)}
+                            />
+                          ) : null}
                         </div>
                       ) : null}
                       {(() => {
@@ -2656,70 +2754,6 @@ export default function LandingPage() {
               disabled={isSending}
             />
             <div className={styles.searchBottom}>
-              <div className={styles.dropdownWrap}>
-                <button
-                  type="button"
-                  className={styles.chip}
-                  aria-expanded={openMenu === 'answer'}
-                  aria-haspopup="listbox"
-                  aria-label="답변 유형"
-                  disabled={isSending}
-                  onClick={() =>
-                    setOpenMenu((m) => (m === 'answer' ? null : 'answer'))
-                  }
-                >
-                  <span className={styles.chipLabel}>{answerMode}</span>
-                  <span className={styles.chevron} aria-hidden>
-                    <IconChevronDown />
-                  </span>
-                </button>
-                {openMenu === 'answer' ? (
-                  <div
-                    className={styles.dropdownPanelAnswer}
-                    role="listbox"
-                    aria-label="답변 유형"
-                  >
-                    {ANSWER_OPTIONS.map(({ mode, description }) => {
-                      const selected = mode === answerMode
-                      return (
-                        <button
-                          key={mode}
-                          type="button"
-                          role="option"
-                          aria-selected={selected}
-                          className={styles.answerOptionRow}
-                          onClick={() => {
-                            setAnswerMode(mode)
-                            setOpenMenu(null)
-                          }}
-                        >
-                          <span className={styles.answerOptionText}>
-                            <span className={styles.answerOptionTitle}>
-                              {mode}
-                            </span>
-                            <span className={styles.answerOptionDesc}>
-                              {description}
-                            </span>
-                          </span>
-                          {selected ? (
-                            <img
-                              src={icoCheck}
-                              alt=""
-                              width={20}
-                              height={20}
-                              className={styles.answerCheckImg}
-                              aria-hidden
-                            />
-                          ) : (
-                            <span className={styles.answerOptionCheckSpacer} />
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
-                ) : null}
-              </div>
-
               <div className={styles.searchBottomRight}>
                 <div
                   className={`${styles.dropdownWrap} ${styles.dropdownWrapEnd}`}
@@ -2974,18 +3008,7 @@ export default function LandingPage() {
                   <div className={styles.chartExpandModalUpper}>
                     <div className={styles.chartExpandModalHeader}>
                       {expandedChartVariant === 'churn' ? (
-                        <div className={styles.chartCardTitleWrap}>
-                          <img
-                            src={imgAppicon2}
-                            alt=""
-                            width={20}
-                            height={20}
-                            className={styles.chartCardAppIcon}
-                          />
-                          <h3 id="chart-expand-title" className={styles.chartCardTitle}>
-                            {CHART2_CARD_TITLE}
-                          </h3>
-                        </div>
+                        <ChartV2TitleSection titleId="chart-expand-title" />
                       ) : (
                         <ChartV1TitleSection titleId="chart-expand-title" />
                       )}
