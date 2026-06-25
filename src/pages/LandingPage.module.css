@@ -754,9 +754,9 @@
   border: none;
   border-radius: 999px;
   background: transparent;
-  color: var(--gray-300);
+  color: var(--primary-300);
   font: inherit;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   line-height: normal;
   cursor: pointer;
@@ -764,8 +764,8 @@
   flex-shrink: 0;
 }
 
-.answerDeepDiveBtn:hover {
-  color: var(--gray-50);
+.answerDeepDiveBtn:hover:not(:disabled) {
+  opacity: 0.88;
 }
 
 .answerDeepDiveBtn:focus-visible {
@@ -773,7 +773,12 @@
   outline-offset: 2px;
 }
 
-.answerDeepDiveBtn:disabled {
+.answerDeepDiveBtnUsed {
+  color: var(--gray-650);
+  cursor: not-allowed;
+}
+
+.answerDeepDiveBtn:disabled:not(.answerDeepDiveBtnUsed) {
   opacity: 0.45;
   cursor: not-allowed;
 }
@@ -783,6 +788,15 @@
   flex-shrink: 0;
   width: 20px;
   height: 20px;
+  background-color: currentColor;
+  mask-image: url('../assets/ico_deepdive.svg');
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-image: url('../assets/ico_deepdive.svg');
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
 }
 
 .feedbackToast {

@@ -30,7 +30,6 @@ import icoCopy from '../assets/ico_copy.svg'
 import icoDownload from '../assets/ico_download.svg'
 import icoExcel from '../assets/ico_excel.svg'
 import icoExpand from '../assets/ico_expand.svg'
-import icoDeepdive from '../assets/ico_deepdive.svg'
 import icoHate from '../assets/ico_hate.svg'
 import icoHateLine from '../assets/ico_hate_line.svg'
 import icoLike from '../assets/ico_like.svg'
@@ -707,26 +706,24 @@ function AnswerFeedbackIconBtn({
 
 function AnswerDeepDiveBtn({
   disabled,
+  used,
   onClick,
 }: {
   disabled?: boolean
+  used?: boolean
   onClick?: () => void
 }) {
   return (
     <TooltipWrap label="깊은 분석+인사이트 제공" disabled={disabled}>
       <button
         type="button"
-        className={styles.answerDeepDiveBtn}
+        className={`${styles.answerDeepDiveBtn}${
+          used ? ` ${styles.answerDeepDiveBtnUsed}` : ''
+        }`}
         disabled={disabled}
         onClick={onClick}
       >
-        <img
-          src={icoDeepdive}
-          alt=""
-          width={20}
-          height={20}
-          className={styles.answerDeepDiveIcon}
-        />
+        <span className={styles.answerDeepDiveIcon} aria-hidden />
         <span>심층 분석하기</span>
       </button>
     </TooltipWrap>
@@ -2620,6 +2617,7 @@ export default function LandingPage() {
                           </div>
                           {showBasicChartDeepDive ? (
                             <AnswerDeepDiveBtn
+                              used={Boolean(deepDiveUsedByLine[line.id])}
                               disabled={
                                 isSending || Boolean(deepDiveUsedByLine[line.id])
                               }
