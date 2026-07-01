@@ -50,6 +50,25 @@ const TABS = ['현황 파악', '변화 추적', '원인 탐색', '향후 예측'
 
 const CHAT_SCROLL_BOTTOM_THRESHOLD = 50
 
+const DEEP_DIVE_QUESTION_SUFFIX = ' (심층 분석)'
+
+function formatThreadPanelQuestion(content: string): {
+  label: string
+  showDeepBadge: boolean
+} {
+  if (content.includes('(심층 분석)')) {
+    const label = content.endsWith(DEEP_DIVE_QUESTION_SUFFIX)
+      ? content.slice(0, -DEEP_DIVE_QUESTION_SUFFIX.length)
+      : content.replace(/\s*\(심층 분석\)\s*$/, '')
+    return { label, showDeepBadge: true }
+  }
+  return { label: content, showDeepBadge: false }
+}
+
+function isDeepDiveQuestion(content: string): boolean {
+  return content.includes('(심층 분석)')
+}
+
 /** Figma 피드백 모달 (`24359:29183`) 사유 목록 */
 const FEEDBACK_REASONS = [
   '데이터가 정확하지 않아요',
@@ -179,19 +198,9 @@ const ICON_PATH_ADD = 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z'
 const ICON_PATH_REMOVE = 'M19 13H5v-2h14v2z'
 
 /**
- * 2뎁스 브랜치 아이콘:
- * - 바로 아래 3뎁스가 있으면 → last
- * - 3뎁스 없고 형제 2개 이상이면 → 마지막 형제만 last, 나머지 middle
- * - 단일 2뎁스 → last
+ * 2뎁스 브랜치 아이콘: 형제가 2개 이상이면 마지막 형제만 last, 단일 2뎁스 → last
  */
-function isDepth2BranchIconLast(
-  branchIdx: number,
-  branchCount: number,
-  hasDepth3Children: boolean,
-): boolean {
-  if (hasDepth3Children) {
-    return true
-  }
+function isDepth2BranchIconLast(branchIdx: number, branchCount: number): boolean {
   if (branchCount > 1) {
     return branchIdx === branchCount - 1
   }
@@ -212,25 +221,27 @@ function ThreadBranchIcon({ isLast }: { isLast: boolean }) {
 }
 
 function ThreadDepthRowButton({
+  lineId,
+  activeNodeId,
   content,
   depth,
   isLastSibling,
   onSelect,
 }: {
+  lineId: string
+  activeNodeId: string | null
   content: string
-  depth: 1 | 2 | 3
+  depth: 1 | 2
   isLastSibling: boolean
   onSelect: () => void
 }) {
   const depthClass =
-    depth === 1
-      ? styles.threadDepthRowDepth1
-      : depth === 2
-        ? styles.threadDepthRowDepth2
-        : styles.threadDepthRowDepth3
+    depth === 1 ? styles.threadDepthRowDepth1 : styles.threadDepthRowDepth2
+  const { label, showDeepBadge } = formatThreadPanelQuestion(content)
+  const isActive = activeNodeId === lineId
 
   return (
-    <TooltipWrap label={content} className={styles.threadDepthTooltipWrap}>
+    <TooltipWrap label={label} className={styles.threadDepthTooltipWrap}>
       <button
         type="button"
         className={`${styles.threadDepthRow} ${depthClass}`}
@@ -241,7 +252,18 @@ function ThreadDepthRowButton({
         ) : (
           <ThreadBranchIcon isLast={isLastSibling} />
         )}
-        <span className={styles.threadDepthText}>{content}</span>
+        <span className={styles.threadDepthTextRow}>
+          <span
+            className={`${styles.threadDepthText}${
+              isActive ? ` ${styles.threadDepthTextActive}` : ''
+            }`}
+          >
+            {label}
+          </span>
+          {showDeepBadge ? (
+            <span className={styles.answerDepthBadge}>심화</span>
+          ) : null}
+        </span>
       </button>
     </TooltipWrap>
   )
@@ -250,7 +272,6 @@ function ThreadDepthRowButton({
 type ThreadPanelBranch = {
   id: string
   content: string
-  children: { id: string; content: string }[]
 }
 
 type ThreadPanelGroup = {
@@ -258,77 +279,45 @@ type ThreadPanelGroup = {
   branches: ThreadPanelBranch[]
 }
 
-/** Figma `24360:35151` — 질문 흐름 패널 mock 트리 */
-const MOCK_THREAD_PANEL_GROUPS: ThreadPanelGroup[] = [
-  {
-    root: {
-      id: 'mock-thread-root-1',
-      content: '쿠팡과 11번가의 최근 1년간 MAU 추이 비교',
-    },
-    branches: [
-      {
-        id: 'mock-thread-d2-1',
-        content: '쿠팡 MAU 성장 요인 분석',
-        children: [
-          { id: 'mock-thread-d3-1', content: '로켓배송 락인 효과 분석' },
-          { id: 'mock-thread-d3-2', content: '쿠팡 와우 멤버십 가입 추이' },
-        ],
-      },
-      {
-        id: 'mock-thread-d2-2',
-        content: '11번가 MAU 감소 원인',
-        children: [
-          { id: 'mock-thread-d3-4', content: '11번가 이탈 사용자 패턴' },
-          { id: 'mock-thread-d3-5', content: '이탈 후 이동한 앱 분석' },
-          { id: 'mock-thread-d3-6', content: '이탈 시점 공통 패턴' },
-        ],
-      },
-    ],
-  },
-  {
-    root: {
-      id: 'mock-thread-root-2',
-      content: '쇼핑 업종 상위 앱 점유율 현황',
-    },
-    branches: [
-      {
-        id: 'mock-thread-d2-3',
-        content: '쿠팡 vs G마켓 사용자 비교',
-        children: [
-          { id: 'mock-thread-d3-7', content: '연령대별 선호 앱 차이' },
-        ],
-      },
-      {
-        id: 'mock-thread-d2-4',
-        content: '신규 쇼핑 앱 성장세 분석',
-        children: [],
-      },
-      {
-        id: 'mock-thread-d2-5',
-        content: '업종별 월간 사용자 증감 추이',
-        children: [],
-      },
-      {
-        id: 'mock-thread-d2-6',
-        content: '쇼핑 앱 재방문율 비교',
-        children: [],
-      },
-    ],
-  },
-  {
-    root: {
-      id: 'mock-thread-root-3',
-      content: '쿠팡과 G마켓의 신규 설치 건수 비교',
-    },
-    branches: [],
-  },
-]
+function buildThreadPanelGroups(thread: ChatLine[]): ThreadPanelGroup[] {
+  const groups: ThreadPanelGroup[] = []
+
+  for (const line of thread) {
+    if (line.role !== 'user') continue
+
+    if (isDeepDiveQuestion(line.content) || line.questionDepth === 1) {
+      groups.push({
+        root: { id: line.id, content: line.content },
+        branches: [],
+      })
+      continue
+    }
+
+    const currentGroup = groups[groups.length - 1]
+    if (!currentGroup) {
+      groups.push({
+        root: { id: line.id, content: line.content },
+        branches: [],
+      })
+      continue
+    }
+
+    currentGroup.branches.push({
+      id: line.id,
+      content: line.content,
+    })
+  }
+
+  return groups
+}
 
 function QuestionFlowPanel({
   groups,
+  activeNodeId,
   onSelectQuestion,
 }: {
   groups: ThreadPanelGroup[]
+  activeNodeId: string | null
   onSelectQuestion: (lineId: string) => void
 }) {
   return (
@@ -347,6 +336,8 @@ function QuestionFlowPanel({
             ) : null}
             <div className={styles.threadPanelGroup}>
               <ThreadDepthRowButton
+                lineId={group.root.id}
+                activeNodeId={activeNodeId}
                 depth={1}
                 content={group.root.content}
                 isLastSibling={false}
@@ -354,36 +345,17 @@ function QuestionFlowPanel({
               />
               {group.branches.map((branch, branchIdx) => {
                 const branchCount = group.branches.length
-                const hasChildren = branch.children.length > 0
-                const depth2IconIsLast = isDepth2BranchIconLast(
-                  branchIdx,
-                  branchCount,
-                  hasChildren,
-                )
+                const depth2IconIsLast = isDepth2BranchIconLast(branchIdx, branchCount)
                 return (
                   <div key={branch.id} className={styles.threadBranchGroup}>
                     <ThreadDepthRowButton
+                      lineId={branch.id}
+                      activeNodeId={activeNodeId}
                       depth={2}
                       content={branch.content}
                       isLastSibling={depth2IconIsLast}
                       onSelect={() => onSelectQuestion(branch.id)}
                     />
-                    {hasChildren ? (
-                      <div className={styles.threadDepth3Group}>
-                        {branch.children.map((child, childIdx) => {
-                          const isLastChild = childIdx === branch.children.length - 1
-                          return (
-                            <ThreadDepthRowButton
-                              key={child.id}
-                              depth={3}
-                              content={child.content}
-                              isLastSibling={isLastChild}
-                              onSelect={() => onSelectQuestion(child.id)}
-                            />
-                          )
-                        })}
-                      </div>
-                    ) : null}
                   </div>
                 )
               })}
@@ -1544,6 +1516,7 @@ export default function LandingPage() {
   const [isSending, setIsSending] = useState(false)
   const [loadingVariant, setLoadingVariant] = useState<'basic' | 'complex'>('basic')
   const [deepDiveLoading, setDeepDiveLoading] = useState(false)
+  const [activeNodeId, setActiveNodeId] = useState<string | null>(null)
   const [thread, setThread] = useState<ChatLine[]>([])
   const [favoriteQuestions, setFavoriteQuestions] = useState<string[]>(() => [
     ...INITIAL_FAVORITE_QUESTIONS,
@@ -1555,6 +1528,7 @@ export default function LandingPage() {
   const [showScrollDownBtn, setShowScrollDownBtn] = useState(false)
   const streamAbortRef = useRef<AbortController | null>(null)
   const threadRef = useRef<ChatLine[]>([])
+  const prevIsSendingRef = useRef(false)
 
   /** 답변 피드백 — line.id 기준 */
   type FeedbackPhase = 'liked' | 'disliked'
@@ -1705,16 +1679,23 @@ export default function LandingPage() {
     return m
   }, [thread])
 
-  const threadPanelGroups = MOCK_THREAD_PANEL_GROUPS
+  const threadPanelGroups = useMemo(() => buildThreadPanelGroups(thread), [thread])
 
   const scrollToQuestion = useCallback(
     (lineId: string) => {
       const qIndex = userQuestionIndexByLineId.get(lineId)
       if (qIndex === undefined) return
-      document.getElementById(`question-${qIndex}`)?.scrollIntoView({
+      const container = chatScrollRef.current
+      const target = document.getElementById(`question-${qIndex}`)
+      if (!container || !target) return
+
+      const containerTop = container.getBoundingClientRect().top
+      const targetTop = target.getBoundingClientRect().top
+      container.scrollTo({
+        top: container.scrollTop + (targetTop - containerTop),
         behavior: 'smooth',
-        block: 'center',
       })
+      setActiveNodeId(lineId)
     },
     [userQuestionIndexByLineId],
   )
@@ -1735,6 +1716,7 @@ export default function LandingPage() {
     setIsThreadPanelOpen(false)
     setFeedbackByLine({})
     setDeepDiveUsedByLine({})
+    setActiveNodeId(null)
     setFeedbackModalLineId(null)
     setFeedbackReasons({})
     setFeedbackComment('')
@@ -2025,7 +2007,7 @@ export default function LandingPage() {
     }
 
     const variant = assistantLine.chartMockVariant ?? 'combo'
-    const deepQuestion = `${userLine.content} (심층 분석)`
+    const deepQuestion = `${userLine.content}${DEEP_DIVE_QUESTION_SUFFIX}`
     const payload = buildChartPayload(variant, 'deep')
 
     setDeepDiveUsedByLine((used) => ({ ...used, [assistantLineId]: true }))
@@ -2134,6 +2116,37 @@ export default function LandingPage() {
     setShowScrollDownBtn(distanceFromBottom > CHAT_SCROLL_BOTTOM_THRESHOLD)
   }, [])
 
+  const updateActiveNodeFromScroll = useCallback(() => {
+    const container = chatScrollRef.current
+    if (!container) return
+
+    const containerTop = container.getBoundingClientRect().top
+    let closestLineId: string | null = null
+    let closestDistance = Infinity
+
+    for (const line of thread) {
+      if (line.role !== 'user') continue
+      const qIndex = userQuestionIndexByLineId.get(line.id)
+      if (qIndex === undefined) continue
+      const el = document.getElementById(`question-${qIndex}`)
+      if (!el) continue
+      const distance = Math.abs(el.getBoundingClientRect().top - containerTop)
+      if (distance < closestDistance) {
+        closestDistance = distance
+        closestLineId = line.id
+      }
+    }
+
+    if (closestLineId) {
+      setActiveNodeId(closestLineId)
+    }
+  }, [thread, userQuestionIndexByLineId])
+
+  const handleChatScroll = useCallback(() => {
+    updateScrollDownVisible()
+    updateActiveNodeFromScroll()
+  }, [updateScrollDownVisible, updateActiveNodeFromScroll])
+
   const scrollChatToBottom = useCallback(() => {
     const container = chatScrollRef.current
     if (!container) return
@@ -2146,15 +2159,23 @@ export default function LandingPage() {
       setShowScrollDownBtn(false)
       return
     }
-    updateScrollDownVisible()
-    container.addEventListener('scroll', updateScrollDownVisible, { passive: true })
-    const resizeObserver = new ResizeObserver(updateScrollDownVisible)
+    handleChatScroll()
+    container.addEventListener('scroll', handleChatScroll, { passive: true })
+    const resizeObserver = new ResizeObserver(handleChatScroll)
     resizeObserver.observe(container)
     return () => {
-      container.removeEventListener('scroll', updateScrollDownVisible)
+      container.removeEventListener('scroll', handleChatScroll)
       resizeObserver.disconnect()
     }
-  }, [thread.length, updateScrollDownVisible])
+  }, [thread.length, handleChatScroll])
+
+  useEffect(() => {
+    if (thread.length === 0) return
+    const frame = requestAnimationFrame(() => {
+      updateActiveNodeFromScroll()
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [thread, updateActiveNodeFromScroll])
 
   useEffect(() => {
     if (!isSending) return
@@ -2162,6 +2183,37 @@ export default function LandingPage() {
     if (!container) return
     container.scrollTop = container.scrollHeight
   }, [thread, isSending])
+
+  useEffect(() => {
+    const wasSending = prevIsSendingRef.current
+    prevIsSendingRef.current = isSending
+
+    if (!wasSending || isSending) return
+
+    const currentThread = threadRef.current
+    if (currentThread.length < 2) return
+
+    const last = currentThread[currentThread.length - 1]
+    const prev = currentThread[currentThread.length - 2]
+    if (
+      last.role !== 'assistant' ||
+      prev.role !== 'user' ||
+      !last.content ||
+      (last.replyKind !== 'chart' && last.replyKind !== 'text')
+    ) {
+      return
+    }
+
+    let innerFrame = 0
+    const outerFrame = requestAnimationFrame(() => {
+      scrollChatToBottom()
+      innerFrame = requestAnimationFrame(scrollChatToBottom)
+    })
+    return () => {
+      cancelAnimationFrame(outerFrame)
+      if (innerFrame) cancelAnimationFrame(innerFrame)
+    }
+  }, [isSending, scrollChatToBottom])
 
   useEffect(() => {
     if (openMenu === null) return
@@ -2629,6 +2681,8 @@ export default function LandingPage() {
                       {(() => {
                         if (
                           !showAnswerFooter ||
+                          isSending ||
+                          index !== thread.length - 1 ||
                           (assistantLine.replyKind !== 'chart' &&
                             assistantLine.replyKind !== 'text')
                         ) {
@@ -2870,6 +2924,7 @@ export default function LandingPage() {
       {hasConversation && isThreadPanelOpen ? (
         <QuestionFlowPanel
           groups={threadPanelGroups}
+          activeNodeId={activeNodeId}
           onSelectQuestion={scrollToQuestion}
         />
       ) : null}

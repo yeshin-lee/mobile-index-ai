@@ -214,20 +214,13 @@
   line-height: 31px;
 }
 
-.threadDepthRowDepth2 {
-  padding: 0 12px 0 0;
-}
-
-.threadDepthRowDepth3 {
-  padding: 0 12px 0 20px;
-}
-
-.threadDepthBullet {
-  flex-shrink: 0;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: #e4e4e7;
+.threadDepthTextRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
 }
 
 .threadDepthText {
@@ -242,14 +235,24 @@
   color: #e4e4e7;
 }
 
-.threadBranchGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  width: 100%;
+.threadDepthTextActive {
+  color: var(--primary-300);
+  font-weight: 700;
 }
 
-.threadDepth3Group {
+.threadDepthRowDepth2 {
+  padding: 0 12px 0 0;
+}
+
+.threadDepthBullet {
+  flex-shrink: 0;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #e4e4e7;
+}
+
+.threadBranchGroup {
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -575,7 +578,11 @@
   gap: 16px;
   align-items: stretch;
   box-sizing: border-box;
-  margin: 0 auto 64px;
+  margin: 0 auto 32px;
+}
+
+.answerArticle:has(+ .chatScrollAnchor) {
+  margin-bottom: 0;
 }
 
 /* Figma `top line` (`24384:10208`) — logo 그룹 + badge, gap 10px */
