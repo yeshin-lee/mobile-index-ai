@@ -261,7 +261,7 @@ function ThreadDepthRowButton({
             {label}
           </span>
           {showDeepBadge ? (
-            <span className={styles.answerDepthBadge}>심화</span>
+            <span className={styles.answerDepthBadge}>심층</span>
           ) : null}
         </span>
       </button>
@@ -2483,7 +2483,7 @@ export default function LandingPage() {
                         <span className={styles.answerAgentTitle}>MI AI Agent</span>
                       </div>
                       {isDeepChart ? (
-                        <span className={styles.answerDepthBadge}>심화</span>
+                        <span className={styles.answerDepthBadge}>심층</span>
                       ) : null}
                     </div>
                     <div className={styles.answerBody}>
